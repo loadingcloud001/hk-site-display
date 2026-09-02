@@ -12,4 +12,16 @@ Not a Smart Site Safety System (4S). Official icons and notice text only. Rest t
 
 ## Local run
 
-See `docker-compose.yml` (after Phase E) or ingest + Vite in development.
+```bash
+# API
+.venv/Scripts/python.exe -m uvicorn app.main:app --app-dir services/ingest --host 127.0.0.1 --port 8000
+
+# Kiosk (another terminal)
+cd apps/kiosk && npm install && npm run dev
+```
+
+Open http://localhost:5173/?sim=1 — bottom buttons: none / amber / red / black / tc8 / black-rain.
+
+`python -m pytest tests -q` (use `.venv/Scripts/python.exe`).
+
+Docker: `docker compose up --build` then http://127.0.0.1:8080/?sim=1
