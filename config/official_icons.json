@@ -1,0 +1,17 @@
+{
+  "TC1": "official/weather/tc1.issuing.gif",
+  "TC3": "official/weather/tc3.issuing.gif",
+  "TC8NE": "official/weather/tc8ne.issuing.gif",
+  "TC8SE": "official/weather/tc8se.issuing.gif",
+  "TC8NW": "official/weather/tc8nw.issuing.gif",
+  "TC8SW": "official/weather/tc8sw.issuing.gif",
+  "TC9": "official/weather/tc9.issuing.gif",
+  "TC10": "official/weather/tc10.issuing.gif",
+  "WRAINA": "official/weather/raina.issuing.gif",
+  "WRAINR": "official/weather/rainr.issuing.gif",
+  "WRAINB": "official/weather/rainb.issuing.gif",
+  "WTS": "official/weather/ts.issuing.gif",
+  "WL": "official/weather/landslip.issuing.gif",
+  "WHOT": "official/weather/vhot.issuing.gif",
+  "WMSGNL": "official/weather/msn.issuing.gif"
+}

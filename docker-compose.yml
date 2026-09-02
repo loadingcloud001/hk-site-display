@@ -1,0 +1,21 @@
+services:
+  ingest:
+    build:
+      context: .
+      dockerfile: services/ingest/Dockerfile
+    environment:
+      SNAPSHOT_TTL_SEC: "60"
+      ENABLE_SIM: "true"
+  web:
+    build:
+      context: .
+      dockerfile: apps/kiosk/Dockerfile
+  caddy:
+    image: caddy:2
+    ports:
+      - "8080:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - ingest
+      - web

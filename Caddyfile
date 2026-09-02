@@ -1,0 +1,8 @@
+:80 {
+	handle /api/* {
+		reverse_proxy ingest:8000
+	}
+	handle {
+		reverse_proxy web:80
+	}
+}
