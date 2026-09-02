@@ -10,6 +10,8 @@ Not a Smart Site Safety System (4S). Official icons and notice text only. Rest t
 - Weather warnings: HKO Open Data `warnsum` + `warningInfo`
 - Icons: HKO / Labour Department originals in `apps/kiosk/public/official/`
 
+Ingest polls those feeds every 60s. The kiosk refreshes `/api/v1/snapshot` every 30s. Production never uses the simulator overlay.
+
 ## Local run
 
 ```bash
@@ -20,9 +22,11 @@ Not a Smart Site Safety System (4S). Official icons and notice text only. Rest t
 cd apps/kiosk && npm install && npm run dev
 ```
 
-Open http://localhost:5173/?gallery=1 — every official icon and every signal case, including simultaneous warnings.
-Open http://localhost:5173/?kiosk=1 — production canteen (landscape or portrait; same page).
+- http://localhost:5173/?kiosk=1 — **live** canteen (landscape or portrait; same page). Auto-updates from HKO / Labour Department.
+- http://localhost:5173/ — same live snapshot (cursor visible).
+- http://localhost:5173/?sim=1 — fixture preview only (does not replace live snapshot).
+- http://localhost:5173/?gallery=1 — every official icon and every signal case.
 
 `python -m pytest tests -q` (use `.venv/Scripts/python.exe`).
 
-Docker: `docker compose up --build` then http://127.0.0.1:8080/?sim=1
+Docker: `docker compose up --build` then http://127.0.0.1:8080/?kiosk=1

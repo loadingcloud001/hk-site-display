@@ -4,6 +4,8 @@ import { present, type Snapshot } from "./present";
 const params = new URLSearchParams(window.location.search);
 const SIM = params.get("sim") === "1";
 const KIOSK = params.get("kiosk") === "1";
+const FIXTURE = params.get("fixture");
+const POLL_MS = 30_000;
 
 function clockNow(): string {
   return new Date().toLocaleTimeString("en-GB", {
@@ -42,6 +44,8 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
   const [err, setErr] = useState<string | null>(null);
   const [cases, setCases] = useState<CaseBtn[]>([]);
   const [clock, setClock] = useState(clockNow);
+  const [holdSim, setHoldSim] = useState(false);
+  const [layout, setLayout] = useState(readLayout);
 
   useEffect(() => {
     document.documentElement.classList.toggle("kiosk", KIOSK);
@@ -53,10 +57,22 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
   }, []);
 
   useEffect(() => {
+    const onResize = () => setLayout(readLayout());
+    onResize();
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, []);
+
+  useEffect(() => {
     if (snapshot) {
       setSnap(snapshot);
       return;
     }
+    if (holdSim) return;
     let alive = true;
     const tick = async () => {
       try {
@@ -70,12 +86,12 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
       }
     };
     tick();
-    const id = setInterval(tick, 30000);
+    const id = setInterval(tick, POLL_MS);
     return () => {
       alive = false;
       clearInterval(id);
     };
-  }, [snapshot]);
+  }, [snapshot, holdSim]);
 
   useEffect(() => {
     if (!SIM || KIOSK) return;
@@ -87,26 +103,26 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
       .catch(() => undefined);
   }, []);
 
-  const [layout, setLayout] = useState(readLayout);
-
   useEffect(() => {
-    const onResize = () => setLayout(readLayout());
-    onResize();
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
-    return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
-    };
+    if (!SIM || KIOSK || !FIXTURE || snapshot) return;
+    void sim(FIXTURE);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function sim(name: string) {
-    await fetch("/api/v1/sim", {
+    const r = await fetch("/api/v1/sim", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fixture: name }),
     });
-    setSnap(await loadSnap());
+    if (!r.ok) return;
+    setHoldSim(true);
+    setSnap(await r.json());
+    setErr(null);
+  }
+
+  function live() {
+    setHoldSim(false);
   }
 
   if (!snap) {
@@ -130,6 +146,9 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
     >
       {SIM && !KIOSK && (
         <div className="simbar">
+          <button type="button" onClick={live}>
+            現場
+          </button>
           <a className="sim-link" href="/?gallery=1">
             全部預覽
           </a>

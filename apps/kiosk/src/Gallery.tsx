@@ -33,13 +33,8 @@ export function Gallery() {
       .catch(() => setErr("無法載入預覽 — 請確認 ingest API 已開"));
   }, []);
 
-  async function openCase(id: string) {
-    await fetch("/api/v1/sim", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fixture: id }),
-    });
-    window.location.href = "/?sim=1";
+  function openCase(id: string) {
+    window.location.href = "/?sim=1&fixture=" + encodeURIComponent(id);
   }
 
   if (err) {
@@ -62,7 +57,8 @@ export function Gallery() {
     <div className="gallery">
       <header className="gallery-head">
         <h1>官方圖示／全部訊號</h1>
-        <a href="/?sim=1">返回飯堂全屏</a>
+        <a href="/?kiosk=1">現場飯堂</a>
+        <a href="/?sim=1">模擬器</a>
       </header>
 
       <h2>官方圖示</h2>
