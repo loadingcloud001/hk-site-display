@@ -28,6 +28,20 @@ def _warn(code: str, name: str, type_: str) -> dict:
     return {key: {"name": name, "code": code, "actionCode": "ISSUE", "type": type_}}
 
 
+def _merge_warn(*parts: dict) -> dict:
+    out = {}
+    for part in parts:
+        out.update(part)
+    return out
+
+
+def _merge_info(*parts: dict) -> dict:
+    details = []
+    for part in parts:
+        details.extend((part or {}).get("details") or [])
+    return {"details": details}
+
+
 def _info(code: str, text: str, subtype: str | None = None) -> dict:
     return {
         "details": [
@@ -173,6 +187,69 @@ SPECS = [
         "hsww": "hsww_amber_inforce.json",
         "warnsum": _warn("TC1", "熱帶氣旋警告信號", "一號戒備信號"),
         "info": _info("WTCSGNL", "一號戒備信號現正生效。", "TC1"),
+    },
+    {
+        "id": "amber-vhot",
+        "labelZh": "黃暑熱＋酷熱",
+        "group": "combo",
+        "hsww": "hsww_amber_inforce.json",
+        "warnsum": _warn("WHOT", "酷熱天氣警告", "酷熱天氣警告"),
+        "info": _info("WHOT", "酷熱天氣警告現正生效。"),
+    },
+    {
+        "id": "amber-ts",
+        "labelZh": "黃暑熱＋雷暴",
+        "group": "combo",
+        "hsww": "hsww_amber_inforce.json",
+        "warnsum": _warn("WTS", "雷暴警告", "雷暴警告"),
+        "info": _info("WTS", "雷暴警告現正生效。"),
+    },
+    {
+        "id": "amber-tc3",
+        "labelZh": "黃暑熱＋三號",
+        "group": "combo",
+        "hsww": "hsww_amber_inforce.json",
+        "warnsum": _warn("TC3", "熱帶氣旋警告信號", "三號強風信號"),
+        "info": _info("WTCSGNL", "三號強風信號現正生效。", "TC3"),
+    },
+    {
+        "id": "tc8-amber",
+        "labelZh": "八號＋黃暑熱",
+        "group": "combo",
+        "hsww": "hsww_amber_inforce.json",
+        "warnsum": _warn("TC8NE", "熱帶氣旋警告信號", "八號東北烈風或暴風信號"),
+        "info": _info("WTCSGNL", "八號東北烈風或暴風信號現正生效。", "TC8NE"),
+    },
+    {
+        "id": "rain-black-amber",
+        "labelZh": "黑雨＋黃暑熱",
+        "group": "combo",
+        "hsww": "hsww_amber_inforce.json",
+        "warnsum": _warn("WRAINB", "暴雨警告信號", "黑色暴雨警告信號"),
+        "info": _info("WRAIN", "黑色暴雨警告信號現正生效。", "WRAINB"),
+    },
+    {
+        "id": "pre8-amber",
+        "labelZh": "預警八號＋黃暑熱",
+        "group": "combo",
+        "hsww": "hsww_amber_inforce.json",
+        "info": _info("WTCPRE8", "天文台預告將改發八號烈風或暴風信號。"),
+    },
+    {
+        "id": "typhoon-stack",
+        "labelZh": "八號＋黑雨＋山泥＋黃暑熱",
+        "group": "combo",
+        "hsww": "hsww_amber_inforce.json",
+        "warnsum": _merge_warn(
+            _warn("TC8NE", "熱帶氣旋警告信號", "八號東北烈風或暴風信號"),
+            _warn("WRAINB", "暴雨警告信號", "黑色暴雨警告信號"),
+            _warn("WL", "山泥傾瀉警告", "山泥傾瀉警告"),
+        ),
+        "info": _merge_info(
+            _info("WTCSGNL", "八號東北烈風或暴風信號現正生效。", "TC8NE"),
+            _info("WRAIN", "黑色暴雨警告信號現正生效。", "WRAINB"),
+            _info("WL", "山泥傾瀉警告現正生效。"),
+        ),
     },
     {"id": "stale", "labelZh": "資料過期", "group": "hsww", "stale": True},
     {

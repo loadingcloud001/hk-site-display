@@ -124,8 +124,17 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
         </div>
       </div>
       <div className="footer">
-        {view.warnIcon && !view.p0 && <img src={"/" + view.warnIcon.rel} alt="" />}
-        <span>{view.p0 ? view.caption : view.caption || "留意天氣"}</span>
+        <div className="rail">
+          {view.rail.map(
+            (s) =>
+              s.rel && (
+                <img key={s.code} src={"/" + s.rel} alt={s.labelZh} />
+              ),
+          )}
+          <span className="rail-label">
+            {view.also || view.caption || "留意天氣"}
+          </span>
+        </div>
         <span className="clock">{snap.clock || ""}</span>
       </div>
     </div>

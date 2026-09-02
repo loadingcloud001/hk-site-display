@@ -148,7 +148,7 @@ html.gallery-page #root {
 }
 
 .footer {
-  height: 11vh;
+  min-height: 11vh;
   display: flex;
   align-items: center;
   gap: 1.5vw;
@@ -157,8 +157,26 @@ html.gallery-page #root {
   font-weight: 700;
 }
 
-.footer img {
-  height: 8vh;
+.rail {
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+  min-width: 0;
+  flex: 1;
+}
+
+.rail img {
+  height: 9vh;
+  width: auto;
+  object-fit: contain;
+}
+
+.rail-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(18px, 2.2vw, 32px);
+  font-weight: 700;
 }
 
 .clock {

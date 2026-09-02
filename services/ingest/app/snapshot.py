@@ -12,26 +12,80 @@ P1 = {"TC3", "WRAINR", "WTS", "WTCPRE8"}
 
 
 PRE8_CAPTION = "預警八號熱帶氣旋警告信號"
+HSWW_LABEL = {
+    "amber": "黃色工作暑熱警告",
+    "red": "紅色工作暑熱警告",
+    "black": "黑色工作暑熱警告",
+}
+
+
+def code_rank(code: str) -> int:
+    c = code or ""
+    if c == "TC10":
+        return 0
+    if c == "TC9":
+        return 1
+    if c.startswith("TC8"):
+        return 2
+    if c == "WRAINB":
+        return 3
+    if c == "WL":
+        return 4
+    if c in P1 or c == "WTCPRE8":
+        return 10
+    if c.startswith("HSWW"):
+        return 20
+    return 30
 
 
 def weather_caption(warnings: list, info: list) -> str:
     """Canteen line: warnsum type/name, never bulletin contents[0]."""
     if warnings:
-
-        def rank(w):
-            c = w.get("code") or ""
-            if c in P0:
-                return 0
-            if c in P1:
-                return 1
-            return 2
-
-        w = sorted(warnings, key=rank)[0]
+        w = sorted(warnings, key=lambda item: code_rank(item.get("code") or ""))[0]
         return (w.get("type") or w.get("name") or "").strip()
     for item in info or []:
         if item.get("code") == "WTCPRE8" or item.get("subtype") == "WTCPRE8":
             return PRE8_CAPTION
     return ""
+
+
+def build_signals(hsww: dict, warnings: list, codes: list, icons_map: dict) -> list:
+    out = []
+    if hsww.get("inForce") and hsww.get("iconRel"):
+        level = hsww.get("level") or "amber"
+        out.append(
+            {
+                "code": f"HSWW-{level}",
+                "rel": hsww["iconRel"],
+                "labelZh": hsww.get("titleZh") or HSWW_LABEL.get(level, "工作暑熱警告"),
+                "kind": "hsww",
+            }
+        )
+    seen = set()
+    for w in warnings:
+        code = w.get("code") or ""
+        if not code or code in seen:
+            continue
+        seen.add(code)
+        out.append(
+            {
+                "code": code,
+                "rel": icons_map.get(code),
+                "labelZh": (w.get("type") or w.get("name") or "").strip(),
+                "kind": "weather",
+            }
+        )
+    if "WTCPRE8" in (codes or []) and "WTCPRE8" not in seen:
+        out.append(
+            {
+                "code": "WTCPRE8",
+                "rel": None,
+                "labelZh": PRE8_CAPTION,
+                "kind": "weather",
+            }
+        )
+    out.sort(key=lambda s: code_rank(s["code"]))
+    return out
 
 
 def snapshot_tone(pri: dict, hsww: dict, codes: list, stale: bool = False) -> str:
@@ -93,6 +147,7 @@ def build_snapshot(
     except Exception:
         clock = now_dt.strftime("%H:%M")
     caption = weather_caption(warnings, info)
+    signals = build_signals(hsww, warnings, codes, icons_map)
     return {
         "generatedAt": now,
         "clock": clock,
@@ -109,6 +164,7 @@ def build_snapshot(
             "rhrread": rhrread or {},
             "headlineZh": caption,
         },
+        "signals": signals,
         "priority": pri,
         "rest": rest,
     }

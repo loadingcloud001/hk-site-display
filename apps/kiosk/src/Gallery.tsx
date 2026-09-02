@@ -114,6 +114,16 @@ export function Gallery() {
                         <p className="action">{view.action}</p>
                         <p className="action-sub">{view.actionSub}</p>
                       </div>
+                      {view.rail.length > 0 && (
+                        <div className="rail mini-rail">
+                          {view.rail.map(
+                            (s) =>
+                              s.rel && (
+                                <img key={s.code} src={"/" + s.rel} alt={s.labelZh} />
+                              ),
+                          )}
+                        </div>
+                      )}
                     </div>
                     <span className="case-label">{c.labelZh}</span>
                   </button>

@@ -110,7 +110,7 @@
 }
 
 .case-tile .stage.mini {
-  height: 168px;
+  height: 190px;
   pointer-events: none;
 }
 
@@ -141,6 +141,15 @@
 .case-tile .stage.mini .footer,
 .case-tile .stage.mini .simbar {
   display: none;
+}
+
+.mini-rail {
+  padding: 0 8px 8px;
+  justify-content: center;
+}
+
+.mini-rail img {
+  height: 28px;
 }
 
 .case-label {
