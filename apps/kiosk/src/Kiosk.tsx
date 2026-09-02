@@ -105,7 +105,6 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
   }
 
   const view = present(snap);
-  const trade = [snap.site.tradeZh, snap.site.workloadZh, "勞工處建議"].filter(Boolean).join(" · ");
 
   return (
     <div
@@ -144,7 +143,6 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
         <div>
           <p className="action">{view.action}</p>
           {view.actionSub && <p className="action-sub">{view.actionSub}</p>}
-          <p className="trade">{trade}</p>
         </div>
       </div>
       <div className="footer">
