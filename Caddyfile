@@ -1,3 +1,13 @@
+hksite-display.loadingtechnology.app {
+	tls /certs/origin.pem /certs/origin.key
+	handle /api/* {
+		reverse_proxy ingest:8000
+	}
+	handle {
+		reverse_proxy web:80
+	}
+}
+
 :80 {
 	handle /api/* {
 		reverse_proxy ingest:8000
