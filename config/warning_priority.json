@@ -3,5 +3,5 @@
   "P1": ["TC3", "WRAINR", "WTS", "WTCPRE8"],
   "P2_hsww": ["red", "black"],
   "P3_hsww": ["amber"],
-  "P3_hko": ["TC1", "WRAINA", "WHOT"]
+  "P3_hko": ["TC1", "WRAINA", "WHOT", "WCOLD", "WFIREY", "WFIRER", "WFNTSA", "WFROST", "WTMW", "WMSGNL"]
 }

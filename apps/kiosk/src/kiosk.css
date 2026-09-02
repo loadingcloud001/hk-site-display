@@ -4,14 +4,24 @@ body,
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: #111;
-  color: #fff;
+  background: #1a1714;
+  color: #f4efe6;
+  color-scheme: dark;
   font-family: "Microsoft JhengHei", "Noto Sans TC", sans-serif;
 }
 
 html.kiosk,
 html.kiosk * {
   cursor: none !important;
+}
+
+html.gallery-page,
+html.gallery-page body,
+html.gallery-page #root {
+  height: auto;
+  min-height: 100%;
+  overflow: auto;
+  background: #1a1714;
 }
 
 .stage {
@@ -21,31 +31,58 @@ html.kiosk * {
   width: 100%;
   display: flex;
   flex-direction: column;
+  background: #1a1714;
+  color: #f4efe6;
 }
 
+.stage[data-tone="idle"],
+.stage[data-tone="stale"] {
+  background: #1a1714;
+  color: #f4efe6;
+}
+
+.stage[data-tone="amber"],
 .stage[data-heat="amber"] {
   background: #f5c518;
   color: #111;
 }
 
+.stage[data-tone="red"],
 .stage[data-heat="red"] {
   background: #c1121f;
   color: #fff;
 }
 
+.stage[data-tone="black"],
 .stage[data-heat="black"] {
   background: #111;
   color: #fff;
 }
 
-.stage[data-band="P0"][data-signal="WRAINB"] {
+.stage[data-tone="p0-rain"] {
   background: #0a0a0a;
   color: #fff;
 }
 
+.stage[data-tone="p0-tc"],
 .stage[data-band="P0"][data-signal^="TC"] {
   background: #4a0000;
   color: #fff;
+}
+
+.stage[data-tone="p0-landslip"] {
+  background: #1a1208;
+  color: #fff;
+}
+
+.stage[data-tone="p1"] {
+  background: #3a2208;
+  color: #fff;
+}
+
+.stage[data-tone="watch"] {
+  background: #243044;
+  color: #f4efe6;
 }
 
 .stale {
@@ -66,6 +103,8 @@ html.kiosk * {
   justify-content: center;
   font-size: 6vh;
   font-weight: 800;
+  background: #1a1714;
+  color: #f4efe6;
 }
 
 .hero {
@@ -135,16 +174,25 @@ html.kiosk * {
   right: 0;
   z-index: 20;
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
   padding: 8px;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.72);
   cursor: auto;
+  max-height: 22vh;
+  overflow: auto;
 }
 
-.simbar button {
-  font-size: 14px;
-  padding: 8px 10px;
+.simbar button,
+.sim-link {
+  font-size: 13px;
+  padding: 6px 10px;
   cursor: pointer;
+  background: #f4efe6;
+  color: #1a1714;
+  border: 0;
+  border-radius: 4px;
+  font-weight: 700;
 }
 
 @container (max-aspect-ratio: 3/4) {

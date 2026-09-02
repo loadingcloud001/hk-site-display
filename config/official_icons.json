@@ -13,5 +13,11 @@
   "WTS": "official/weather/ts.issuing.gif",
   "WL": "official/weather/landslip.issuing.gif",
   "WHOT": "official/weather/vhot.issuing.gif",
-  "WMSGNL": "official/weather/msn.issuing.gif"
+  "WMSGNL": "official/weather/msn.issuing.gif",
+  "WCOLD": "official/weather/cold.issuing.gif",
+  "WFIREY": "official/weather/firey.issuing.gif",
+  "WFIRER": "official/weather/firer.issuing.gif",
+  "WFROST": "official/weather/frost.issuing.gif",
+  "WFNTSA": "official/weather/ntfl.issuing.gif",
+  "WTMW": "official/weather/tsunami-warn.issuing.gif"
 }

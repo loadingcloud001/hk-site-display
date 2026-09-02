@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.hko import parse_warnsum  # noqa: F401
 from app.hsww import parse_hkhi_icon  # noqa: F401
+from app.sim_cases import ALIASES, CASE_IDS, build_case, list_cases, list_official_icons
 from app.snapshot import build_snapshot
 
 HKT = timezone(timedelta(hours=8))
@@ -75,57 +76,24 @@ def snapshot():
         raise HTTPException(status_code=503, detail="no-data")
 
 
+@app.get("/api/v1/sim/cases")
+def sim_cases():
+    if not ENABLE_SIM:
+        raise HTTPException(status_code=403, detail="sim-disabled")
+    return {"cases": list_cases(), "icons": list_official_icons()}
+
+
 @app.post("/api/v1/sim")
 def sim(body: dict):
     global _sim
     if not ENABLE_SIM:
         raise HTTPException(status_code=403, detail="sim-disabled")
-    name = body.get("fixture")
     if body.get("clear"):
         _sim = None
         return {"ok": True, "sim": None}
-    fixtures = ROOT / "tests" / "fixtures"
-    hsww_name = "hsww_cancelled_stale.json"
-    warn_name = "warnsum_empty.json"
-    info_name = "warningInfo_empty.json"
-    if name == "amber":
-        hsww_name, warn_name, info_name = (
-            "hsww_amber_inforce.json",
-            "warnsum_empty.json",
-            "warningInfo_empty.json",
-        )
-    elif name == "red":
-        hsww_name, warn_name, info_name = (
-            "hsww_red_synth.json",
-            "warnsum_empty.json",
-            "warningInfo_empty.json",
-        )
-    elif name == "black":
-        hsww_name, warn_name, info_name = (
-            "hsww_black_synth.json",
-            "warnsum_empty.json",
-            "warningInfo_empty.json",
-        )
-    elif name == "tc8":
-        hsww_name, warn_name, info_name = (
-            "hsww_cancelled_stale.json",
-            "warnsum_tc8ne.json",
-            "warningInfo_tc8.json",
-        )
-    elif name == "black-rain":
-        hsww_name, warn_name, info_name = (
-            "hsww_cancelled_stale.json",
-            "warnsum_wrainb.json",
-            "warningInfo_wrainb.json",
-        )
-    elif name == "none":
-        hsww_name, warn_name, info_name = (
-            "hsww_cancelled_stale.json",
-            "warnsum_empty.json",
-            "warningInfo_empty.json",
-        )
-    hsww = json.loads((fixtures / hsww_name).read_text(encoding="utf-8"))
-    warnsum = json.loads((fixtures / warn_name).read_text(encoding="utf-8"))
-    winfo = json.loads((fixtures / info_name).read_text(encoding="utf-8"))
-    _sim = build_snapshot(hsww, warnsum, winfo, {"icon": [60]}, SITE, SCHEDULE, ICONS)
+    name = body.get("fixture")
+    key = ALIASES.get(name, name)
+    if key not in CASE_IDS:
+        raise HTTPException(status_code=400, detail="unknown-fixture")
+    _sim = build_case(key)
     return _sim

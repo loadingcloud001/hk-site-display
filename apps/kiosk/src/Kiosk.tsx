@@ -1,29 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-
-type Icon = { code: string; rel: string };
-
-type Snapshot = {
-  generatedAt: string;
-  clock?: string;
-  staleAfterSec: number;
-  stale?: boolean;
-  site: { id: string; nameZh: string };
-  hsww: {
-    level: string;
-    inForce: boolean;
-    noticeZh: string;
-    titleZh: string;
-    iconRel: string | null;
-    ldLogoRel: string;
-  };
-  hko: {
-    icons: Icon[];
-    headlineZh?: string;
-    wxIconRel: string | null;
-  };
-  priority: { band: string; headlineZh: string };
-  rest: { work: number; rest: number; suspend: boolean; perHours?: number };
-};
+import { present, type Snapshot } from "./present";
 
 const params = new URLSearchParams(window.location.search);
 const SIM = params.get("sim") === "1";
@@ -35,22 +11,22 @@ async function loadSnap(): Promise<Snapshot> {
   return r.json();
 }
 
-function isStale(s: Snapshot): boolean {
-  if (s.stale) return true;
-  const t = Date.parse(s.generatedAt);
-  if (Number.isNaN(t)) return true;
-  return Date.now() - t > (s.staleAfterSec || 600) * 1000;
-}
+type CaseBtn = { id: string; labelZh: string };
 
-export function Kiosk() {
-  const [snap, setSnap] = useState<Snapshot | null>(null);
+export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
+  const [snap, setSnap] = useState<Snapshot | null>(snapshot ?? null);
   const [err, setErr] = useState<string | null>(null);
+  const [cases, setCases] = useState<CaseBtn[]>([]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("kiosk", KIOSK);
   }, []);
 
   useEffect(() => {
+    if (snapshot) {
+      setSnap(snapshot);
+      return;
+    }
     let alive = true;
     const tick = async () => {
       try {
@@ -69,6 +45,16 @@ export function Kiosk() {
       alive = false;
       clearInterval(id);
     };
+  }, [snapshot]);
+
+  useEffect(() => {
+    if (!SIM) return;
+    fetch("/api/v1/sim/cases")
+      .then((r) => r.json())
+      .then((d) => {
+        setCases((d.cases || []).map((c: CaseBtn) => ({ id: c.id, labelZh: c.labelZh })));
+      })
+      .catch(() => undefined);
   }, []);
 
   const layout = useMemo(() => {
@@ -89,74 +75,57 @@ export function Kiosk() {
 
   if (!snap) {
     return (
-      <div className="stage">
+      <div className="stage" data-tone="idle" data-layout={layout}>
         <div className="boot">{err || "載入中…"}</div>
       </div>
     );
   }
 
-  const stale = isStale(snap);
-  const band = snap.priority.band;
-  const heat = snap.hsww.inForce ? snap.hsww.level : "";
-  const warnIcon = snap.hko.icons[0];
-  const signal = warnIcon?.code || "";
-  const caption = snap.hko.headlineZh || "";
-  const p0 = band === "P0";
-
-  let action = "正常工作";
-  let actionSub = "";
-  let heroIcon = snap.hsww.iconRel;
-  if (p0) {
-    action = "停工／勿外出";
-    actionSub = caption;
-    heroIcon = warnIcon?.rel || heroIcon;
-  } else if (snap.rest.suspend) {
-    action = "暫停工作";
-    actionSub = snap.hsww.titleZh || "工作暑熱警告";
-  } else if (heat) {
-    action = `休息 ${snap.rest.rest} 分鐘`;
-    actionSub = `工作 ${snap.rest.work} 分鐘`;
-  } else if (caption) {
-    action = caption;
-    actionSub = "現時無工作暑熱警告";
-    heroIcon = warnIcon?.rel || snap.hko.wxIconRel;
-  } else {
-    action = "現時無工作暑熱警告";
-    actionSub = `每 ${snap.rest.perHours || 2} 小時休息 ${snap.rest.rest} 分鐘`;
-    heroIcon = snap.hko.wxIconRel;
-  }
+  const view = present(snap);
 
   return (
     <div
       className="stage"
       data-layout={layout}
-      data-heat={heat}
-      data-band={band}
-      data-signal={signal}
+      data-heat={view.heat}
+      data-band={view.band}
+      data-signal={view.signal}
+      data-tone={view.tone}
     >
       {SIM && (
         <div className="simbar">
-          {["none", "amber", "red", "black", "tc8", "black-rain"].map((n) => (
-            <button key={n} type="button" onClick={() => sim(n)}>
-              {n}
+          <a className="sim-link" href="/?gallery=1">
+            全部預覽
+          </a>
+          {(cases.length
+            ? cases
+            : [
+                { id: "none", labelZh: "無警告" },
+                { id: "amber", labelZh: "黃色暑熱" },
+                { id: "red", labelZh: "紅色暑熱" },
+                { id: "black", labelZh: "黑色暑熱" },
+                { id: "tc8ne", labelZh: "八號東北" },
+                { id: "rain-black", labelZh: "黑色暴雨" },
+              ]
+          ).map((n) => (
+            <button key={n.id} type="button" onClick={() => sim(n.id)}>
+              {n.labelZh}
             </button>
           ))}
         </div>
       )}
-      {stale && <div className="stale">資料過期 — 請以我的天文台為準</div>}
+      {view.stale && <div className="stale">資料過期 — 請以我的天文台為準</div>}
       <div className="hero">
-        {heroIcon && (
-          <img className="icon-hero" src={"/" + heroIcon} alt="" />
-        )}
+        {view.heroIcon && <img className="icon-hero" src={"/" + view.heroIcon} alt="" />}
         <div>
-          <p className="action">{action}</p>
-          {actionSub && <p className="action-sub">{actionSub}</p>}
+          <p className="action">{view.action}</p>
+          {view.actionSub && <p className="action-sub">{view.actionSub}</p>}
           <p className="trade">紮鐵 · 極重勞動 · 勞工處建議</p>
         </div>
       </div>
       <div className="footer">
-        {warnIcon && !p0 && <img src={"/" + warnIcon.rel} alt="" />}
-        <span>{p0 ? caption : caption || "留意天氣"}</span>
+        {view.warnIcon && !view.p0 && <img src={"/" + view.warnIcon.rel} alt="" />}
+        <span>{view.p0 ? view.caption : view.caption || "留意天氣"}</span>
         <span className="clock">{snap.clock || ""}</span>
       </div>
     </div>

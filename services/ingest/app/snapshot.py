@@ -11,21 +11,47 @@ P0 = {"TC8NE", "TC8SE", "TC8NW", "TC8SW", "TC8", "TC9", "TC10", "WRAINB", "WL"}
 P1 = {"TC3", "WRAINR", "WTS", "WTCPRE8"}
 
 
+PRE8_CAPTION = "預警八號熱帶氣旋警告信號"
+
+
 def weather_caption(warnings: list, info: list) -> str:
     """Canteen line: warnsum type/name, never bulletin contents[0]."""
-    if not warnings:
-        return ""
+    if warnings:
 
-    def rank(w):
-        c = w.get("code") or ""
-        if c in P0:
-            return 0
-        if c in P1:
-            return 1
-        return 2
+        def rank(w):
+            c = w.get("code") or ""
+            if c in P0:
+                return 0
+            if c in P1:
+                return 1
+            return 2
 
-    w = sorted(warnings, key=rank)[0]
-    return (w.get("type") or w.get("name") or "").strip()
+        w = sorted(warnings, key=rank)[0]
+        return (w.get("type") or w.get("name") or "").strip()
+    for item in info or []:
+        if item.get("code") == "WTCPRE8" or item.get("subtype") == "WTCPRE8":
+            return PRE8_CAPTION
+    return ""
+
+
+def snapshot_tone(pri: dict, hsww: dict, codes: list, stale: bool = False) -> str:
+    if stale:
+        return "stale"
+    codeset = set(codes or [])
+    band = pri.get("band")
+    if band == "P0":
+        if "WRAINB" in codeset:
+            return "p0-rain"
+        if "WL" in codeset:
+            return "p0-landslip"
+        return "p0-tc"
+    if hsww.get("inForce"):
+        return hsww.get("level") or "idle"
+    if band == "P1":
+        return "p1"
+    if band == "P3":
+        return "watch"
+    return "idle"
 
 
 def build_snapshot(
@@ -72,6 +98,7 @@ def build_snapshot(
         "clock": clock,
         "staleAfterSec": 600,
         "stale": False,
+        "tone": snapshot_tone(pri, hsww, codes, False),
         "site": {"id": site.get("siteId"), "nameZh": site.get("nameZh")},
         "hsww": hsww,
         "hko": {

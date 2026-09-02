@@ -20,7 +20,8 @@ Not a Smart Site Safety System (4S). Official icons and notice text only. Rest t
 cd apps/kiosk && npm install && npm run dev
 ```
 
-Open http://localhost:5173/?sim=1 — bottom buttons: none / amber / red / black / tc8 / black-rain.
+Open http://localhost:5173/?gallery=1 — every official icon and every signal case.
+Open http://localhost:5173/?sim=1 — fullscreen kiosk; top bar switches cases (none is dark, never white).
 
 `python -m pytest tests -q` (use `.venv/Scripts/python.exe`).
 
