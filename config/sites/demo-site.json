@@ -1,0 +1,16 @@
+{
+  "siteId": "demo-kai-tak",
+  "nameZh": "示範地盤",
+  "nameEn": "Demo Site",
+  "district": "觀塘",
+  "defaultWorkload": "very_heavy",
+  "environment": "outdoor",
+  "restAdjustMinutes": 0,
+  "primaryTrades": [
+    {
+      "id": "bar-fixer",
+      "labelZh": "紮鐵",
+      "workload": "very_heavy"
+    }
+  ]
+}
