@@ -85,21 +85,45 @@ def sim(body: dict):
         _sim = None
         return {"ok": True, "sim": None}
     fixtures = ROOT / "tests" / "fixtures"
-    hsww_name = body.get("hsww", "hsww_cancelled_stale.json")
-    warn_name = body.get("warnsum", "warnsum_empty.json")
-    info_name = body.get("warningInfo", "warningInfo_tc1.json")
+    hsww_name = "hsww_cancelled_stale.json"
+    warn_name = "warnsum_empty.json"
+    info_name = "warningInfo_empty.json"
     if name == "amber":
-        hsww_name, warn_name = "hsww_amber_inforce.json", "warnsum_tc1.json"
+        hsww_name, warn_name, info_name = (
+            "hsww_amber_inforce.json",
+            "warnsum_empty.json",
+            "warningInfo_empty.json",
+        )
     elif name == "red":
-        hsww_name, warn_name = "hsww_red_synth.json", "warnsum_empty.json"
+        hsww_name, warn_name, info_name = (
+            "hsww_red_synth.json",
+            "warnsum_empty.json",
+            "warningInfo_empty.json",
+        )
     elif name == "black":
-        hsww_name, warn_name = "hsww_black_synth.json", "warnsum_empty.json"
+        hsww_name, warn_name, info_name = (
+            "hsww_black_synth.json",
+            "warnsum_empty.json",
+            "warningInfo_empty.json",
+        )
     elif name == "tc8":
-        hsww_name, warn_name = "hsww_cancelled_stale.json", "warnsum_tc8ne.json"
+        hsww_name, warn_name, info_name = (
+            "hsww_cancelled_stale.json",
+            "warnsum_tc8ne.json",
+            "warningInfo_tc8.json",
+        )
     elif name == "black-rain":
-        hsww_name, warn_name = "hsww_cancelled_stale.json", "warnsum_wrainb.json"
+        hsww_name, warn_name, info_name = (
+            "hsww_cancelled_stale.json",
+            "warnsum_wrainb.json",
+            "warningInfo_wrainb.json",
+        )
     elif name == "none":
-        hsww_name, warn_name = "hsww_cancelled_stale.json", "warnsum_empty.json"
+        hsww_name, warn_name, info_name = (
+            "hsww_cancelled_stale.json",
+            "warnsum_empty.json",
+            "warningInfo_empty.json",
+        )
     hsww = json.loads((fixtures / hsww_name).read_text(encoding="utf-8"))
     warnsum = json.loads((fixtures / warn_name).read_text(encoding="utf-8"))
     winfo = json.loads((fixtures / info_name).read_text(encoding="utf-8"))

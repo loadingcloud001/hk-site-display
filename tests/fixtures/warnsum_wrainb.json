@@ -3,6 +3,6 @@
     "name": "暴雨警告信號",
     "code": "WRAINB",
     "actionCode": "ISSUE",
-    "type": "黑色"
+    "type": "黑色暴雨警告信號"
   }
 }

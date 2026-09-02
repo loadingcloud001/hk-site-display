@@ -4,13 +4,18 @@ body,
   margin: 0;
   height: 100%;
   overflow: hidden;
-  cursor: none;
   background: #111;
   color: #fff;
-  font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  font-family: "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+}
+
+html.kiosk,
+html.kiosk * {
+  cursor: none !important;
 }
 
 .stage {
+  position: relative;
   container-type: size;
   height: 100%;
   width: 100%;
@@ -18,127 +23,121 @@ body,
   flex-direction: column;
 }
 
-.stale {
-  height: 8vh;
+.stage[data-heat="amber"] {
+  background: #f5c518;
+  color: #111;
+}
+
+.stage[data-heat="red"] {
   background: #c1121f;
   color: #fff;
-  font-size: 4vh;
+}
+
+.stage[data-heat="black"] {
+  background: #111;
+  color: #fff;
+}
+
+.stage[data-band="P0"][data-signal="WRAINB"] {
+  background: #0a0a0a;
+  color: #fff;
+}
+
+.stage[data-band="P0"][data-signal^="TC"] {
+  background: #4a0000;
+  color: #fff;
+}
+
+.stale {
+  height: 7vh;
+  background: #c1121f;
+  color: #fff;
+  font-size: 3.5vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
+  font-weight: 800;
 }
 
-.main {
+.boot {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6vh;
+  font-weight: 800;
+}
+
+.hero {
   flex: 1;
   display: flex;
-  min-height: 0;
-}
-
-.left,
-.right {
-  display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  padding: 2vh 2vw;
+  justify-content: center;
+  min-height: 0;
+  padding: 2vh 4vw;
   text-align: center;
 }
 
-.left {
-  width: 55%;
-  background: #1a1a1a;
-}
-
-.right {
-  width: 45%;
-  background: #0d0d0d;
-}
-
-.title {
-  font-size: clamp(36px, 6vw, 72px);
-  font-weight: 800;
-  line-height: 1.15;
-  margin: 0 0 2vh;
-}
-
-.notice {
-  font-size: clamp(22px, 2.8vw, 36px);
-  line-height: 1.35;
-  max-width: 90%;
-}
-
-.rest-num {
-  font-size: clamp(64px, 10vw, 120px);
-  font-weight: 900;
-  line-height: 1;
-}
-
-.rest-label {
-  font-size: clamp(24px, 3vw, 40px);
-  margin-top: 1vh;
-  color: #ddd;
-}
-
-.icon-lg {
-  height: 28vh;
+.icon-hero {
+  height: 38vh;
   width: auto;
-  max-width: 80%;
+  max-width: 70%;
   object-fit: contain;
+  margin-bottom: 2vh;
 }
 
-.ld {
-  height: 6vh;
-  margin-bottom: 1.5vh;
+.action {
+  font-size: clamp(52px, 9vw, 110px);
+  font-weight: 900;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.action-sub {
+  font-size: clamp(28px, 4vw, 52px);
+  font-weight: 800;
+  margin: 1.2vh 0 0;
+  line-height: 1.15;
+}
+
+.trade {
+  font-size: clamp(22px, 2.6vw, 36px);
+  margin-top: 2vh;
+  opacity: 0.9;
+  font-weight: 700;
 }
 
 .footer {
-  height: 10vh;
-  background: #000;
+  height: 11vh;
   display: flex;
   align-items: center;
-  gap: 2vw;
-  padding: 0 2vw;
-  font-size: clamp(18px, 2.2vw, 32px);
+  gap: 1.5vw;
+  padding: 0 2vw 1.5vh;
+  font-size: clamp(22px, 2.6vw, 36px);
+  font-weight: 700;
 }
 
 .footer img {
   height: 8vh;
 }
 
-.overlay {
-  position: absolute;
-  inset: 0;
-  background: #4a0000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 5;
-  padding: 4vh;
-  text-align: center;
-}
-
-.overlay.p1 {
-  background: #5c3b00;
-}
-
-.overlay .stop {
-  font-size: clamp(48px, 8vw, 96px);
-  font-weight: 900;
-  margin-top: 2vh;
+.clock {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(28px, 3.5vw, 48px);
 }
 
 .simbar {
   position: absolute;
-  bottom: 0;
+  top: 0;
   left: 0;
   right: 0;
-  z-index: 10;
+  z-index: 20;
   display: flex;
   gap: 8px;
   padding: 8px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.55);
   cursor: auto;
 }
 
@@ -149,21 +148,20 @@ body,
 }
 
 @container (max-aspect-ratio: 3/4) {
-  .main {
-    flex-direction: column;
+  .icon-hero {
+    height: 28vh;
   }
-  .left,
-  .right {
-    width: 100%;
-    height: 50%;
+  .action {
+    font-size: 8vw;
   }
 }
 
 @container (min-aspect-ratio: 2.5/1) {
-  .title {
-    font-size: 5vw;
+  .hero {
+    flex-direction: row;
+    gap: 4vw;
   }
-  .rest-num {
-    font-size: 8vw;
+  .icon-hero {
+    height: 70%;
   }
 }

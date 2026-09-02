@@ -8,6 +8,7 @@ __pycache__/
 .pytest_cache/
 playwright-report/
 test-results/
+review-*.png
 *.egg-info/
 .DS_Store
 Thumbs.db

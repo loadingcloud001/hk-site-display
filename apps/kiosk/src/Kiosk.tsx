@@ -4,6 +4,7 @@ type Icon = { code: string; rel: string };
 
 type Snapshot = {
   generatedAt: string;
+  clock?: string;
   staleAfterSec: number;
   stale?: boolean;
   site: { id: string; nameZh: string };
@@ -11,14 +12,13 @@ type Snapshot = {
     level: string;
     inForce: boolean;
     noticeZh: string;
-    noticeLeadZh: string;
     titleZh: string;
     iconRel: string | null;
     ldLogoRel: string;
   };
   hko: {
     icons: Icon[];
-    warningInfo: { code: string; contents: string[] }[];
+    headlineZh?: string;
     wxIconRel: string | null;
   };
   priority: { band: string; headlineZh: string };
@@ -27,7 +27,7 @@ type Snapshot = {
 
 const params = new URLSearchParams(window.location.search);
 const SIM = params.get("sim") === "1";
-const THEME = params.get("theme") || "canteen";
+const KIOSK = params.get("kiosk") === "1";
 
 async function loadSnap(): Promise<Snapshot> {
   const r = await fetch("/api/v1/snapshot");
@@ -47,6 +47,10 @@ export function Kiosk() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
+    document.documentElement.classList.toggle("kiosk", KIOSK);
+  }, []);
+
+  useEffect(() => {
     let alive = true;
     const tick = async () => {
       try {
@@ -55,8 +59,8 @@ export function Kiosk() {
           setSnap(s);
           setErr(null);
         }
-      } catch (e) {
-        if (alive) setErr("無法取得資料");
+      } catch {
+        if (alive) setErr("無法取得資料 — 請以我的天文台為準");
       }
     };
     tick();
@@ -86,77 +90,50 @@ export function Kiosk() {
   if (!snap) {
     return (
       <div className="stage">
-        <div className="title" style={{ padding: "8vh" }}>
-          {err || "載入中…"}
-        </div>
+        <div className="boot">{err || "載入中…"}</div>
       </div>
     );
   }
 
   const stale = isStale(snap);
-  const p0 = snap.priority.band === "P0";
-  const p1 = snap.priority.band === "P1";
-  const heat = snap.hsww.inForce;
-  const firstWarn = snap.hko.warningInfo[0]?.contents?.[0] || snap.priority.headlineZh;
+  const band = snap.priority.band;
+  const heat = snap.hsww.inForce ? snap.hsww.level : "";
   const warnIcon = snap.hko.icons[0];
+  const signal = warnIcon?.code || "";
+  const caption = snap.hko.headlineZh || "";
+  const p0 = band === "P0";
+
+  let action = "正常工作";
+  let actionSub = "";
+  let heroIcon = snap.hsww.iconRel;
+  if (p0) {
+    action = "停工／勿外出";
+    actionSub = caption;
+    heroIcon = warnIcon?.rel || heroIcon;
+  } else if (snap.rest.suspend) {
+    action = "暫停工作";
+    actionSub = snap.hsww.titleZh || "工作暑熱警告";
+  } else if (heat) {
+    action = `休息 ${snap.rest.rest} 分鐘`;
+    actionSub = `工作 ${snap.rest.work} 分鐘`;
+  } else if (caption) {
+    action = caption;
+    actionSub = "現時無工作暑熱警告";
+    heroIcon = warnIcon?.rel || snap.hko.wxIconRel;
+  } else {
+    action = "現時無工作暑熱警告";
+    actionSub = `每 ${snap.rest.perHours || 2} 小時休息 ${snap.rest.rest} 分鐘`;
+    heroIcon = snap.hko.wxIconRel;
+  }
 
   return (
-    <div className="stage" data-layout={layout} data-theme={THEME}>
-      {stale && <div className="stale">資料過期 — 請以我的天文台為準</div>}
-      {p0 && (
-        <div className="overlay">
-          {warnIcon && <img className="icon-lg" src={"/" + warnIcon.rel} alt={warnIcon.code} />}
-          <div className="stop">停工／勿外出</div>
-          <p className="notice">{firstWarn}</p>
-        </div>
-      )}
-      {p1 && !p0 && (
-        <div className="overlay p1">
-          {warnIcon && <img className="icon-lg" src={"/" + warnIcon.rel} alt={warnIcon.code} />}
-          <div className="stop">限制戶外工作</div>
-          <p className="notice">{firstWarn}</p>
-        </div>
-      )}
-      <div className="main">
-        <div className="left">
-          <img className="ld" src={"/" + snap.hsww.ldLogoRel} alt="勞工處" />
-          {heat && snap.hsww.iconRel && (
-            <img className="icon-lg" src={"/" + snap.hsww.iconRel} alt={snap.hsww.titleZh} />
-          )}
-          <h1 className="title">
-            {heat ? snap.hsww.titleZh : "現時無工作暑熱警告"}
-          </h1>
-          {heat && <p className="notice">{snap.hsww.noticeZh}</p>}
-        </div>
-        <div className="right">
-          {snap.rest.suspend ? (
-            <>
-              <div className="rest-num">暫停工作</div>
-              <div className="rest-label">重／極重勞動（勞工處建議）</div>
-            </>
-          ) : heat ? (
-            <>
-              <div className="rest-num">
-                {snap.rest.work}/{snap.rest.rest}
-              </div>
-              <div className="rest-label">分鐘工作 / 分鐘休息 · 紮鐵（極重）</div>
-            </>
-          ) : (
-            <>
-              <div className="rest-num">{snap.rest.rest} 分</div>
-              <div className="rest-label">
-                每 {snap.rest.perHours || 2} 小時休息（無暑熱警告）
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-      <div className="footer">
-        {warnIcon && <img src={"/" + warnIcon.rel} alt="" />}
-        {snap.hko.wxIconRel && <img src={"/" + snap.hko.wxIconRel} alt="" />}
-        <span>{firstWarn}</span>
-        <span style={{ marginLeft: "auto", opacity: 0.6 }}>{snap.generatedAt}</span>
-      </div>
+    <div
+      className="stage"
+      data-layout={layout}
+      data-heat={heat}
+      data-band={band}
+      data-signal={signal}
+    >
       {SIM && (
         <div className="simbar">
           {["none", "amber", "red", "black", "tc8", "black-rain"].map((n) => (
@@ -166,6 +143,22 @@ export function Kiosk() {
           ))}
         </div>
       )}
+      {stale && <div className="stale">資料過期 — 請以我的天文台為準</div>}
+      <div className="hero">
+        {heroIcon && (
+          <img className="icon-hero" src={"/" + heroIcon} alt="" />
+        )}
+        <div>
+          <p className="action">{action}</p>
+          {actionSub && <p className="action-sub">{actionSub}</p>}
+          <p className="trade">紮鐵 · 極重勞動 · 勞工處建議</p>
+        </div>
+      </div>
+      <div className="footer">
+        {warnIcon && !p0 && <img src={"/" + warnIcon.rel} alt="" />}
+        <span>{p0 ? caption : caption || "留意天氣"}</span>
+        <span className="clock">{snap.clock || ""}</span>
+      </div>
     </div>
   );
 }

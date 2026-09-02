@@ -1,0 +1,9 @@
+{
+  "details": [
+    {
+      "contents": ["黑色暴雨警告信號現正生效。"],
+      "subtype": "WRAINB",
+      "warningStatementCode": "WRAIN"
+    }
+  ]
+}
