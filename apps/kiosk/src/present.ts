@@ -29,7 +29,7 @@ export type Snapshot = {
     wxIconRel: string | null;
   };
   signals?: Signal[];
-  display?: { action: string; actionSub: string };
+  display?: { action: string; actionSub: string; heroRel?: string | null };
   priority: { band: string; headlineZh: string };
   rest: { work: number; rest: number; suspend: boolean; perHours?: number };
 };
@@ -70,7 +70,7 @@ export function present(snap: Snapshot) {
   const high = rail.filter(isHigh);
   const action = snap.display?.action || "正常工作";
   const actionSub = snap.display?.actionSub || restLine;
-  const heroIcon = high[0]?.rel || null;
+  const heroIcon = high[0]?.rel || snap.display?.heroRel || null;
   const also = rail.map((s) => s.labelZh).filter(Boolean).join(" · ");
 
   return {

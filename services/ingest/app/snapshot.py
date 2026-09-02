@@ -79,6 +79,7 @@ def build_display(hsww: dict, rest: dict, signals: list) -> dict:
     return {
         "action": "正常工作",
         "actionSub": f"每 {per} 小時休息 {rest.get('rest', 10)} 分鐘",
+        "heroRel": "status/work-ok.svg",
     }
 
 

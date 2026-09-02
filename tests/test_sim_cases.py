@@ -61,6 +61,8 @@ def test_normal_work_uses_idle_tone_even_with_tc1():
     snap = build_case("tc1")
     assert snap["display"]["action"] == "正常工作"
     assert snap["tone"] == "idle"
+    assert snap["display"]["heroRel"] == "status/work-ok.svg"
+    assert (ROOT / "apps/kiosk/public/status/work-ok.svg").is_file()
 
 
 def test_black_rain_caption_not_typhoon():
