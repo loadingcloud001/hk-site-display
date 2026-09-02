@@ -14,7 +14,7 @@ export type Snapshot = {
   staleAfterSec: number;
   stale?: boolean;
   tone?: string;
-  site: { id: string; nameZh: string };
+  site: { id: string; nameZh: string; tradeZh?: string; workloadZh?: string };
   hsww: {
     level: string;
     inForce: boolean;

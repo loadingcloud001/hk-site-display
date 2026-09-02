@@ -17,6 +17,12 @@ HSWW_LABEL = {
     "red": "紅色工作暑熱警告",
     "black": "黑色工作暑熱警告",
 }
+WORKLOAD_ZH = {
+    "light": "輕勞動",
+    "moderate": "中勞動",
+    "heavy": "重勞動",
+    "very_heavy": "極重勞動",
+}
 
 
 def code_rank(code: str) -> int:
@@ -156,6 +162,8 @@ def build_snapshot(
         clock = clock_src.astimezone(HKT).strftime("%H:%M")
     except Exception:
         clock = now_dt.strftime("%H:%M")
+    trades = site.get("primaryTrades") or []
+    trade = trades[0] if trades else {}
     caption = weather_caption(warnings, info)
     signals = build_signals(hsww, warnings, codes, icons_map)
     return {
@@ -164,7 +172,12 @@ def build_snapshot(
         "staleAfterSec": 600,
         "stale": False,
         "tone": snapshot_tone(pri, hsww, codes, False),
-        "site": {"id": site.get("siteId"), "nameZh": site.get("nameZh")},
+        "site": {
+            "id": site.get("siteId"),
+            "nameZh": site.get("nameZh"),
+            "tradeZh": trade.get("labelZh") or "",
+            "workloadZh": WORKLOAD_ZH.get(wl, wl),
+        },
         "hsww": hsww,
         "hko": {
             "warnsum": warnings,

@@ -5,6 +5,15 @@ const params = new URLSearchParams(window.location.search);
 const SIM = params.get("sim") === "1";
 const KIOSK = params.get("kiosk") === "1";
 
+function clockNow(): string {
+  return new Date().toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Hong_Kong",
+  });
+}
+
 async function loadSnap(): Promise<Snapshot> {
   const r = await fetch("/api/v1/snapshot");
   if (!r.ok) throw new Error("snapshot");
@@ -13,13 +22,27 @@ async function loadSnap(): Promise<Snapshot> {
 
 type CaseBtn = { id: string; labelZh: string };
 
+function Sign({ rel, label, hero }: { rel: string; label: string; hero?: boolean }) {
+  return (
+    <span className={hero ? "sign sign-hero" : "sign"}>
+      <img src={"/" + rel} alt={label} />
+    </span>
+  );
+}
+
 export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
   const [snap, setSnap] = useState<Snapshot | null>(snapshot ?? null);
   const [err, setErr] = useState<string | null>(null);
   const [cases, setCases] = useState<CaseBtn[]>([]);
+  const [clock, setClock] = useState(clockNow);
 
   useEffect(() => {
     document.documentElement.classList.toggle("kiosk", KIOSK);
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => setClock(clockNow()), 1000);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
@@ -48,7 +71,7 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
   }, [snapshot]);
 
   useEffect(() => {
-    if (!SIM) return;
+    if (!SIM || KIOSK) return;
     fetch("/api/v1/sim/cases")
       .then((r) => r.json())
       .then((d) => {
@@ -82,6 +105,7 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
   }
 
   const view = present(snap);
+  const trade = [snap.site.tradeZh, snap.site.workloadZh, "勞工處建議"].filter(Boolean).join(" · ");
 
   return (
     <div
@@ -92,7 +116,7 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
       data-signal={view.signal}
       data-tone={view.tone}
     >
-      {SIM && (
+      {SIM && !KIOSK && (
         <div className="simbar">
           <a className="sim-link" href="/?gallery=1">
             全部預覽
@@ -116,26 +140,18 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
       )}
       {view.stale && <div className="stale">資料過期 — 請以我的天文台為準</div>}
       <div className="hero">
-        {view.heroIcon && <img className="icon-hero" src={"/" + view.heroIcon} alt="" />}
+        {view.heroIcon && <Sign rel={view.heroIcon} label="" hero />}
         <div>
           <p className="action">{view.action}</p>
           {view.actionSub && <p className="action-sub">{view.actionSub}</p>}
-          <p className="trade">紮鐵 · 極重勞動 · 勞工處建議</p>
+          <p className="trade">{trade}</p>
         </div>
       </div>
       <div className="footer">
         <div className="rail">
-          {view.rail.map(
-            (s) =>
-              s.rel && (
-                <img key={s.code} src={"/" + s.rel} alt={s.labelZh} />
-              ),
-          )}
-          <span className="rail-label">
-            {view.also || view.caption || "留意天氣"}
-          </span>
+          {view.rail.map((s) => s.rel && <Sign key={s.code} rel={s.rel} label={s.labelZh} />)}
         </div>
-        <span className="clock">{snap.clock || ""}</span>
+        <span className="clock">{clock}</span>
       </div>
     </div>
   );

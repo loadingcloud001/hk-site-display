@@ -53,6 +53,8 @@ def test_none_is_idle_without_white_weather_tile():
     assert snap["hko"]["wxIconRel"] is None
     assert snap["hko"]["icons"] == []
     assert snap["hko"]["headlineZh"] == ""
+    assert snap["site"]["tradeZh"] == "紮鐵"
+    assert snap["site"]["workloadZh"] == "極重勞動"
 
 
 def test_black_rain_caption_not_typhoon():
