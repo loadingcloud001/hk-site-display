@@ -4,9 +4,9 @@ body,
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: #1a1714;
-  color: #f4efe6;
-  color-scheme: dark;
+  background: #c9c2b0;
+  color: #1b1914;
+  color-scheme: light;
   font-family: "Microsoft JhengHei", "Noto Sans TC", sans-serif;
   user-select: none;
   -webkit-user-select: none;
@@ -24,6 +24,8 @@ html.gallery-page #root {
   min-height: 100%;
   overflow: auto;
   background: #1a1714;
+  color: #f4efe6;
+  color-scheme: dark;
 }
 
 .stage {
@@ -33,14 +35,14 @@ html.gallery-page #root {
   width: 100%;
   display: flex;
   flex-direction: column;
-  background: #1a1714;
-  color: #f4efe6;
+  background: #c9c2b0;
+  color: #1b1914;
 }
 
 .stage[data-tone="idle"],
 .stage[data-tone="stale"] {
-  background: #1a1714;
-  color: #f4efe6;
+  background: #c9c2b0;
+  color: #1b1914;
 }
 
 .stage[data-tone="amber"],
@@ -105,8 +107,8 @@ html.gallery-page #root {
   justify-content: center;
   font-size: 6vh;
   font-weight: 800;
-  background: #1a1714;
-  color: #f4efe6;
+  background: #c9c2b0;
+  color: #1b1914;
 }
 
 .hero {

@@ -57,6 +57,12 @@ def test_none_is_idle_without_white_weather_tile():
     assert snap["site"]["workloadZh"] == "極重勞動"
 
 
+def test_normal_work_uses_idle_tone_even_with_tc1():
+    snap = build_case("tc1")
+    assert snap["display"]["action"] == "正常工作"
+    assert snap["tone"] == "idle"
+
+
 def test_black_rain_caption_not_typhoon():
     snap = build_case("rain-black")
     assert "黑色暴雨" in snap["hko"]["headlineZh"]

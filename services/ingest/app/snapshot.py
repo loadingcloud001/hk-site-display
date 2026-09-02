@@ -197,12 +197,16 @@ def build_snapshot(
     trade = trades[0] if trades else {}
     caption = weather_caption(warnings, info)
     signals = build_signals(hsww, warnings, codes, icons_map)
+    rest_display = build_display(hsww, rest, signals)
+    tone = snapshot_tone(pri, hsww, codes, False)
+    if rest_display.get("action") == "正常工作":
+        tone = "idle"
     return {
         "generatedAt": now,
         "clock": clock,
         "staleAfterSec": 600,
         "stale": False,
-        "tone": snapshot_tone(pri, hsww, codes, False),
+        "tone": tone,
         "site": {
             "id": site.get("siteId"),
             "nameZh": site.get("nameZh"),
@@ -219,7 +223,7 @@ def build_snapshot(
             "headlineZh": caption,
         },
         "signals": signals,
-        "display": build_display(hsww, rest, signals),
+        "display": rest_display,
         "priority": pri,
         "rest": rest,
     }
