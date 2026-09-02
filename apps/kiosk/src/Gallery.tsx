@@ -57,7 +57,7 @@ export function Gallery() {
     <div className="gallery">
       <header className="gallery-head">
         <h1>全部訊號</h1>
-        <a href="/?live=1">Live</a>
+        <a href="/">Live</a>
         <a href="/?preview=1">Preview</a>
       </header>
 

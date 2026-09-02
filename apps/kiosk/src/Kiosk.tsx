@@ -123,10 +123,6 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
     setErr(null);
   }
 
-  function live() {
-    setHoldSim(false);
-  }
-
   if (!snap) {
     return (
       <div className="stage" data-tone="idle" data-layout={layout}>
@@ -148,9 +144,9 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
     >
       {PREVIEW && !LIVE && (
         <div className="simbar">
-          <button type="button" onClick={live}>
+          <a className="sim-link" href="/">
             Live
-          </button>
+          </a>
           <a className="sim-link" href="/?gallery=1">
             Gallery
           </a>
