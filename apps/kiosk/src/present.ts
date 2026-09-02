@@ -5,6 +5,7 @@ export type Signal = {
   rel: string | null;
   labelZh: string;
   kind: string;
+  impact?: "high" | "low";
 };
 
 export type Snapshot = {
@@ -44,6 +45,11 @@ const P0 = new Set([
   "WL",
 ]);
 
+function isHigh(s: Signal): boolean {
+  if (s.impact) return s.impact === "high";
+  return s.kind === "hsww" || P0.has(s.code);
+}
+
 export function isStale(s: Snapshot): boolean {
   if (s.stale) return true;
   const t = Date.parse(s.generatedAt);
@@ -59,54 +65,43 @@ export function present(snap: Snapshot) {
   const p0 = band === "P0";
   const restLine = `每 ${snap.rest.perHours || 2} 小時休息 ${snap.rest.rest} 分鐘`;
   const signals = snap.signals || [];
-  const withArt = signals.filter((s) => s.rel);
+  const rail = signals.filter((s) => s.rel);
+  const high = rail.filter(isHigh);
+  const hero = high[0] || null;
 
   let action = "正常工作";
   let actionSub = restLine;
   let heroIcon: string | null = null;
-  let rail: Signal[] = [];
 
   if (p0) {
-    const hero = withArt.find((s) => P0.has(s.code)) || withArt[0];
     heroIcon = hero?.rel || null;
-    rail = withArt.filter((s) => s.rel !== heroIcon);
     action = "停工／勿外出";
     actionSub = caption || hero?.labelZh || "";
   } else if (snap.rest.suspend) {
-    const hero = withArt.find((s) => s.kind === "hsww");
-    heroIcon = hero?.rel || snap.hsww.iconRel;
-    rail = withArt.filter((s) => s.kind !== "hsww");
+    heroIcon = rail.find((s) => s.kind === "hsww")?.rel || snap.hsww.iconRel;
     action = "暫停工作";
     actionSub = snap.hsww.titleZh || "工作暑熱警告";
   } else if (heat) {
-    const hero = withArt.find((s) => s.kind === "hsww");
-    heroIcon = hero?.rel || snap.hsww.iconRel;
-    rail = withArt.filter((s) => s.kind !== "hsww");
+    heroIcon = rail.find((s) => s.kind === "hsww")?.rel || snap.hsww.iconRel;
     action = `休息 ${snap.rest.rest} 分鐘`;
     actionSub = `工作 ${snap.rest.work} 分鐘`;
-  } else if (caption) {
-    const hero = withArt.find((s) => s.kind === "weather") || withArt[0];
-    heroIcon = hero?.rel || null;
-    rail = withArt.filter((s) => s.rel !== heroIcon);
-    action = caption;
-    actionSub = restLine;
   }
+  // Low-impact weather (T1, yellow rain, 酷熱, 雷暴…) stays in the rail only.
 
-  const warnIcon = snap.hko.icons[0];
   const also = rail.map((s) => s.labelZh).filter(Boolean).join(" · ");
 
   return {
     stale,
     band,
     heat,
-    signal: warnIcon?.code || rail[0]?.code || "",
+    signal: high[0]?.code || rail[0]?.code || "",
     caption,
     p0,
     tone: snap.tone || (p0 ? "p0-tc" : heat || "idle"),
     action,
     actionSub,
     heroIcon,
-    warnIcon,
+    warnIcon: snap.hko.icons[0],
     rail,
     also,
   };

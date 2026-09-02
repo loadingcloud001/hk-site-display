@@ -38,6 +38,13 @@ def code_rank(code: str) -> int:
     return 30
 
 
+def is_high_impact(code: str, kind: str = "") -> bool:
+    c = code or ""
+    if kind == "hsww" or c.startswith("HSWW"):
+        return True
+    return c in P0
+
+
 def weather_caption(warnings: list, info: list) -> str:
     """Canteen line: warnsum type/name, never bulletin contents[0]."""
     if warnings:
@@ -59,6 +66,7 @@ def build_signals(hsww: dict, warnings: list, codes: list, icons_map: dict) -> l
                 "rel": hsww["iconRel"],
                 "labelZh": hsww.get("titleZh") or HSWW_LABEL.get(level, "工作暑熱警告"),
                 "kind": "hsww",
+                "impact": "high",
             }
         )
     seen = set()
@@ -73,6 +81,7 @@ def build_signals(hsww: dict, warnings: list, codes: list, icons_map: dict) -> l
                 "rel": icons_map.get(code),
                 "labelZh": (w.get("type") or w.get("name") or "").strip(),
                 "kind": "weather",
+                "impact": "high" if is_high_impact(code, "weather") else "low",
             }
         )
     if "WTCPRE8" in (codes or []) and "WTCPRE8" not in seen:
@@ -82,6 +91,7 @@ def build_signals(hsww: dict, warnings: list, codes: list, icons_map: dict) -> l
                 "rel": None,
                 "labelZh": PRE8_CAPTION,
                 "kind": "weather",
+                "impact": "low",
             }
         )
     out.sort(key=lambda s: code_rank(s["code"]))

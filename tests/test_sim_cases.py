@@ -86,14 +86,41 @@ def test_tc8_plus_amber_is_stop_with_hsww_still_listed():
     assert "HSWW-amber" in codes
 
 
-def test_typhoon_stack_lists_all_weather_icons():
+def test_low_weather_is_not_high_impact():
+    for name in ("tc1", "tc3", "rain-amber", "thunderstorm", "vhot", "pre8"):
+        snap = build_case(name)
+        assert snap["signals"], name
+        assert all(s["impact"] == "low" for s in snap["signals"]), name
+
+
+def test_site_changing_signals_are_high_impact():
+    for name, code in (
+        ("amber", "HSWW-amber"),
+        ("tc8ne", "TC8NE"),
+        ("rain-black", "WRAINB"),
+        ("landslip", "WL"),
+    ):
+        snap = build_case(name)
+        hit = next(s for s in snap["signals"] if s["code"] == code)
+        assert hit["impact"] == "high", name
+
+
+def test_amber_tc1_splits_impact():
+    snap = build_case("amber-tc1")
+    by = {s["code"]: s["impact"] for s in snap["signals"]}
+    assert by["HSWW-amber"] == "high"
+    assert by["TC1"] == "low"
+
+
+def test_typhoon_stack_lists_every_sign():
     snap = build_case("typhoon-stack")
-    codes = [s["code"] for s in snap["signals"]]
-    assert codes[0] == "TC8NE"
-    assert "WRAINB" in codes
-    assert "WL" in codes
-    assert "HSWW-amber" in codes
-    assert "八號東北" in snap["hko"]["headlineZh"]
+    assert [s["code"] for s in snap["signals"]] == [
+        "TC8NE",
+        "WRAINB",
+        "WL",
+        "HSWW-amber",
+    ]
+    assert all(s["impact"] == "high" for s in snap["signals"])
 
 
 def test_warning_cases_point_at_real_official_files():
