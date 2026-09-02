@@ -61,8 +61,8 @@ def test_normal_work_uses_idle_tone_even_with_tc1():
     snap = build_case("tc1")
     assert snap["display"]["action"] == "正常工作"
     assert snap["tone"] == "idle"
-    assert snap["display"]["heroRel"] == "status/work-ok.svg"
-    assert (ROOT / "apps/kiosk/public/status/work-ok.svg").is_file()
+    assert snap["display"]["heroRel"] == "status/work-ok.png"
+    assert (ROOT / "apps/kiosk/public/status/work-ok.png").is_file()
 
 
 def test_black_rain_caption_not_typhoon():
@@ -105,7 +105,8 @@ def test_official_display_actions():
     assert build_case("amber")["display"]["action"] == "休息 45 分鐘"
     assert build_case("red")["display"]["action"] == "暫停工作"
     assert build_case("none")["display"]["action"] == "正常工作"
-    for name in ("tc1", "tc3", "rain-amber", "thunderstorm", "vhot", "pre8"):
+    assert build_case("pre8")["display"]["action"] == "盡早返回有蓋處"
+    for name in ("tc1", "tc3", "rain-amber", "thunderstorm", "vhot"):
         snap = build_case(name)
         assert snap["signals"], name
         assert all(s["impact"] == "low" for s in snap["signals"]), name
@@ -117,6 +118,7 @@ def test_site_changing_signals_are_high_impact():
         ("tc8ne", "TC8NE"),
         ("rain-black", "WRAINB"),
         ("rain-red", "WRAINR"),
+        ("pre8", "WTCPRE8"),
         ("landslip", "WL"),
     ):
         snap = build_case(name)
@@ -143,7 +145,7 @@ def test_typhoon_stack_lists_every_sign():
 
 
 def test_warning_cases_point_at_real_official_files():
-    skip_icon = {"none", "stale", "pre8"}
+    skip_icon = {"none", "stale"}
     for case in list_cases():
         snap = case["snapshot"]
         if case["id"] in skip_icon:
@@ -152,6 +154,9 @@ def test_warning_cases_point_at_real_official_files():
         if snap["hsww"]["iconRel"]:
             rels.append(snap["hsww"]["iconRel"])
         rels.extend(i["rel"] for i in snap["hko"]["icons"])
+        rels.extend(s["rel"] for s in snap.get("signals") or [] if s.get("rel"))
+        if snap.get("display", {}).get("heroRel"):
+            rels.append(snap["display"]["heroRel"])
         assert rels, case["id"]
         for rel in rels:
             path = PUBLIC / rel

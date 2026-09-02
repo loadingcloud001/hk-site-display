@@ -52,7 +52,7 @@ def is_high_impact(code: str, kind: str = "") -> bool:
     c = code or ""
     if kind == "hsww" or c.startswith("HSWW"):
         return True
-    return c in P0 or c == "WRAINR"
+    return c in P0 or c in {"WRAINR", "WTCPRE8"}
 
 
 def build_display(hsww: dict, rest: dict, signals: list) -> dict:
@@ -79,7 +79,7 @@ def build_display(hsww: dict, rest: dict, signals: list) -> dict:
     return {
         "action": "正常工作",
         "actionSub": f"每 {per} 小時休息 {rest.get('rest', 10)} 分鐘",
-        "heroRel": "status/work-ok.svg",
+        "heroRel": "status/work-ok.png",
     }
 
 
@@ -126,10 +126,10 @@ def build_signals(hsww: dict, warnings: list, codes: list, icons_map: dict) -> l
         out.append(
             {
                 "code": "WTCPRE8",
-                "rel": None,
+                "rel": "status/pre8.png",
                 "labelZh": PRE8_CAPTION,
                 "kind": "weather",
-                "impact": "low",
+                "impact": "high",
             }
         )
     out.sort(key=lambda s: code_rank(s["code"]))
