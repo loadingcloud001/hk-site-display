@@ -75,8 +75,20 @@ def test_black_rain_caption_not_typhoon():
 def test_pre8_has_short_caption():
     snap = build_case("pre8")
     assert snap["priority"]["band"] == "P1"
-    assert "八號" in snap["hko"]["headlineZh"]
-    assert snap["hko"]["headlineZh"] != "香港天文台發出最新熱帶氣旋警報"
+    assert snap["display"]["action"] == "盡早返回有蓋處"
+    assert "八號" in snap["display"]["actionSub"]
+    codes = [s["code"] for s in snap["signals"]]
+    assert "WTCPRE8" in codes
+    assert "TC3" in codes
+
+
+def test_winning_weather_action_sets_tone_not_leftover_hsww():
+    pre8a = build_case("pre8-amber")
+    assert pre8a["display"]["action"] == "盡早返回有蓋處"
+    assert pre8a["tone"] == "p1"
+    stack = build_case("typhoon-stack")
+    assert stack["display"]["action"] == "留在室內"
+    assert stack["tone"] == "p0-tc"
 
 
 def test_amber_plus_tc1_keeps_rest_and_both_signals():
@@ -119,6 +131,7 @@ def test_site_changing_signals_are_high_impact():
         ("rain-black", "WRAINB"),
         ("rain-red", "WRAINR"),
         ("pre8", "WTCPRE8"),
+        ("tsunami", "WTMW"),
         ("landslip", "WL"),
     ):
         snap = build_case(name)
@@ -161,3 +174,23 @@ def test_warning_cases_point_at_real_official_files():
         for rel in rels:
             path = PUBLIC / rel
             assert path.is_file(), f"{case['id']} missing {rel}"
+
+
+def test_display_covers_every_sim_case():
+    missing = []
+    for case in list_cases():
+        snap = case["snapshot"]
+        action = (snap.get("display") or {}).get("action")
+        if not action:
+            missing.append(f"{case['id']}:no-action")
+            continue
+        if action == "正常工作":
+            if snap.get("stale"):
+                continue
+            if snap["tone"] != "idle":
+                missing.append(f"{case['id']}:normal-work-not-idle")
+            continue
+        highs = [s for s in snap["signals"] if s.get("impact") == "high" and s.get("rel")]
+        if not highs and not (snap.get("display") or {}).get("heroRel"):
+            missing.append(f"{case['id']}:no-hero")
+    assert missing == []

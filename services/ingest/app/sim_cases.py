@@ -178,6 +178,7 @@ SPECS = [
         "id": "pre8",
         "labelZh": "預警八號",
         "group": "tc",
+        "warnsum": _warn("TC3", "熱帶氣旋警告信號", "三號強風信號"),
         "info": _info("WTCPRE8", "天文台預告將改發八號烈風或暴風信號。"),
     },
     {

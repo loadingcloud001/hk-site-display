@@ -52,7 +52,7 @@ def is_high_impact(code: str, kind: str = "") -> bool:
     c = code or ""
     if kind == "hsww" or c.startswith("HSWW"):
         return True
-    return c in P0 or c in {"WRAINR", "WTCPRE8"}
+    return c in P0 or c in {"WRAINR", "WTCPRE8", "WTMW"}
 
 
 def build_display(hsww: dict, rest: dict, signals: list) -> dict:
@@ -200,6 +200,19 @@ def build_snapshot(
     signals = build_signals(hsww, warnings, codes, icons_map)
     rest_display = build_display(hsww, rest, signals)
     tone = snapshot_tone(pri, hsww, codes, False)
+    weather_act = ACTIONS.get("weather") or {}
+    win = next((s.get("code") for s in signals if weather_act.get(s.get("code") or "")), None)
+    if win:
+        if str(win).startswith("TC8") or win in {"TC9", "TC10"}:
+            tone = "p0-tc"
+        elif win == "WRAINB":
+            tone = "p0-rain"
+        elif win == "WL":
+            tone = "p0-landslip"
+        elif win == "WTMW":
+            tone = "watch"
+        else:
+            tone = "p1"
     if rest_display.get("action") == "正常工作":
         tone = "idle"
     return {
