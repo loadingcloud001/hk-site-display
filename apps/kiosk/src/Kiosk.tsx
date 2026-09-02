@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { present, type Snapshot } from "./present";
 
 const params = new URLSearchParams(window.location.search);
-const SIM = params.get("sim") === "1";
-const KIOSK = params.get("kiosk") === "1";
+const flag = (...keys: string[]) => keys.some((k) => params.get(k) === "1");
+const LIVE = flag("live", "kiosk");
+const PREVIEW = flag("preview", "sim");
 const FIXTURE = params.get("fixture");
 const POLL_MS = 30_000;
 
@@ -48,7 +49,8 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
   const [layout, setLayout] = useState(readLayout);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("kiosk", KIOSK);
+    document.documentElement.classList.toggle("live", LIVE);
+    document.documentElement.classList.toggle("kiosk", LIVE);
   }, []);
 
   useEffect(() => {
@@ -94,7 +96,7 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
   }, [snapshot, holdSim]);
 
   useEffect(() => {
-    if (!SIM || KIOSK) return;
+    if (!PREVIEW || LIVE) return;
     fetch("/api/v1/sim/cases")
       .then((r) => r.json())
       .then((d) => {
@@ -104,7 +106,7 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
   }, []);
 
   useEffect(() => {
-    if (!SIM || KIOSK || !FIXTURE || snapshot) return;
+    if (!PREVIEW || LIVE || !FIXTURE || snapshot) return;
     void sim(FIXTURE);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -144,13 +146,13 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
       data-signal={view.signal}
       data-tone={view.tone}
     >
-      {SIM && !KIOSK && (
+      {PREVIEW && !LIVE && (
         <div className="simbar">
           <button type="button" onClick={live}>
-            現場
+            Live
           </button>
           <a className="sim-link" href="/?gallery=1">
-            全部預覽
+            Gallery
           </a>
           {(cases.length
             ? cases

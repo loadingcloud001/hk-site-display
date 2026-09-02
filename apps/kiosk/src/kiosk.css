@@ -12,6 +12,8 @@ body,
   -webkit-user-select: none;
 }
 
+html.live,
+html.live *,
 html.kiosk,
 html.kiosk * {
   cursor: none !important;

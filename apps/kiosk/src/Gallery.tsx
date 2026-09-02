@@ -20,7 +20,7 @@ export function Gallery() {
 
   useEffect(() => {
     document.documentElement.classList.add("gallery-page");
-    document.documentElement.classList.remove("kiosk");
+    document.documentElement.classList.remove("kiosk", "live");
     fetch("/api/v1/sim/cases")
       .then((r) => {
         if (!r.ok) throw new Error("cases");
@@ -34,7 +34,7 @@ export function Gallery() {
   }, []);
 
   function openCase(id: string) {
-    window.location.href = "/?sim=1&fixture=" + encodeURIComponent(id);
+    window.location.href = "/?preview=1&fixture=" + encodeURIComponent(id);
   }
 
   if (err) {
@@ -56,9 +56,9 @@ export function Gallery() {
   return (
     <div className="gallery">
       <header className="gallery-head">
-        <h1>官方圖示／全部訊號</h1>
-        <a href="/?kiosk=1">現場飯堂</a>
-        <a href="/?sim=1">模擬器</a>
+        <h1>全部訊號</h1>
+        <a href="/?live=1">Live</a>
+        <a href="/?preview=1">Preview</a>
       </header>
 
       <h2>官方圖示</h2>
