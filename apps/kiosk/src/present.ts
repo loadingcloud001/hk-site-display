@@ -29,6 +29,7 @@ export type Snapshot = {
     wxIconRel: string | null;
   };
   signals?: Signal[];
+  display?: { action: string; actionSub: string };
   priority: { band: string; headlineZh: string };
   rest: { work: number; rest: number; suspend: boolean; perHours?: number };
 };
@@ -67,27 +68,9 @@ export function present(snap: Snapshot) {
   const signals = snap.signals || [];
   const rail = signals.filter((s) => s.rel);
   const high = rail.filter(isHigh);
-  const hero = high[0] || null;
-
-  let action = "正常工作";
-  let actionSub = restLine;
-  let heroIcon: string | null = null;
-
-  if (p0) {
-    heroIcon = hero?.rel || null;
-    action = "停工／勿外出";
-    actionSub = caption || hero?.labelZh || "";
-  } else if (snap.rest.suspend) {
-    heroIcon = rail.find((s) => s.kind === "hsww")?.rel || snap.hsww.iconRel;
-    action = "暫停工作";
-    actionSub = snap.hsww.titleZh || "工作暑熱警告";
-  } else if (heat) {
-    heroIcon = rail.find((s) => s.kind === "hsww")?.rel || snap.hsww.iconRel;
-    action = `休息 ${snap.rest.rest} 分鐘`;
-    actionSub = `工作 ${snap.rest.work} 分鐘`;
-  }
-  // Low-impact weather (T1, yellow rain, 酷熱, 雷暴…) stays in the rail only.
-
+  const action = snap.display?.action || "正常工作";
+  const actionSub = snap.display?.actionSub || restLine;
+  const heroIcon = high[0]?.rel || null;
   const also = rail.map((s) => s.labelZh).filter(Boolean).join(" · ");
 
   return {

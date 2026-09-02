@@ -1,4 +1,6 @@
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
+import json
 
 from app.hko import parse_warnsum, parse_warning_info, active_codes
 from app.hsww import parse_hkhi_icon
@@ -6,6 +8,8 @@ from app.priority import classify
 from app.rest import lookup
 
 HKT = timezone(timedelta(hours=8))
+ROOT = Path(__file__).resolve().parents[3]
+ACTIONS = json.loads((ROOT / "config" / "display_actions.json").read_text(encoding="utf-8"))
 
 P0 = {"TC8NE", "TC8SE", "TC8NW", "TC8SW", "TC8", "TC9", "TC10", "WRAINB", "WL"}
 P1 = {"TC3", "WRAINR", "WTS", "WTCPRE8"}
@@ -48,7 +52,34 @@ def is_high_impact(code: str, kind: str = "") -> bool:
     c = code or ""
     if kind == "hsww" or c.startswith("HSWW"):
         return True
-    return c in P0
+    return c in P0 or c == "WRAINR"
+
+
+def build_display(hsww: dict, rest: dict, signals: list) -> dict:
+    weather = ACTIONS.get("weather") or {}
+    for s in signals or []:
+        spec = weather.get(s.get("code") or "")
+        if not spec:
+            continue
+        return {
+            "action": spec["action"],
+            "actionSub": spec.get("sub") or s.get("labelZh") or "",
+        }
+    if rest.get("suspend"):
+        return {
+            "action": "暫停工作",
+            "actionSub": hsww.get("titleZh") or "工作暑熱警告",
+        }
+    if hsww.get("inForce"):
+        return {
+            "action": f"休息 {rest.get('rest', 0)} 分鐘",
+            "actionSub": f"工作 {rest.get('work', 0)} 分鐘",
+        }
+    per = rest.get("perHours") or 2
+    return {
+        "action": "正常工作",
+        "actionSub": f"每 {per} 小時休息 {rest.get('rest', 10)} 分鐘",
+    }
 
 
 def weather_caption(warnings: list, info: list) -> str:
@@ -188,6 +219,7 @@ def build_snapshot(
             "headlineZh": caption,
         },
         "signals": signals,
+        "display": build_display(hsww, rest, signals),
         "priority": pri,
         "rest": rest,
     }
