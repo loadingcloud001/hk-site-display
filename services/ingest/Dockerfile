@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 WORKDIR /app
-COPY services/ingest/pyproject.toml /app/services/ingest/pyproject.toml
-RUN pip install --no-cache-dir fastapi uvicorn httpx
+COPY services/ingest/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 COPY config /app/config
 COPY tests/fixtures /app/tests/fixtures
 COPY services/ingest /app/services/ingest

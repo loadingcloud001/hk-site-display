@@ -1,0 +1,13 @@
+.git
+.hermes
+.venv
+node_modules
+**/__pycache__
+.pytest_cache
+*.pyc
+.env
+apps/kiosk/dist
+review-*.png
+qa-*.png
+qa2-*.png
+**/*.egg-info

@@ -3,8 +3,8 @@ import { present, type Snapshot } from "./present";
 
 const params = new URLSearchParams(window.location.search);
 const flag = (...keys: string[]) => keys.some((k) => params.get(k) === "1");
-const LIVE = flag("live", "kiosk");
 const PREVIEW = flag("preview", "sim");
+const LIVE = !PREVIEW || flag("live", "kiosk");
 const FIXTURE = params.get("fixture");
 const POLL_MS = 30_000;
 

@@ -9,8 +9,6 @@ import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.hko import parse_warnsum  # noqa: F401
-from app.hsww import parse_hkhi_icon  # noqa: F401
 from app.sim_cases import ALIASES, CASE_IDS, build_case, list_cases, list_official_icons
 from app.snapshot import build_snapshot
 
@@ -49,8 +47,7 @@ def _fetch_live():
         hsww = client.get(HSWW_URL).json()
         warnsum = client.get(WARN_URL, params={"dataType": "warnsum", "lang": "tc"}).json()
         winfo = client.get(WARN_URL, params={"dataType": "warningInfo", "lang": "tc"}).json()
-        rhr = client.get(WARN_URL, params={"dataType": "rhrread", "lang": "tc"}).json()
-    snap = build_snapshot(hsww, warnsum, winfo, rhr, SITE, SCHEDULE, ICONS)
+    snap = build_snapshot(hsww, warnsum, winfo, {}, SITE, SCHEDULE, ICONS)
     snap["source"] = "live"
     snap["stale"] = False
     return snap

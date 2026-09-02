@@ -233,7 +233,6 @@ def build_snapshot(
             "warningInfo": info,
             "icons": icons,
             "wxIconRel": wx_icon,
-            "rhrread": rhrread or {},
             "headlineZh": caption,
         },
         "signals": signals,

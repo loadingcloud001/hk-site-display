@@ -10,23 +10,25 @@ Not a Smart Site Safety System (4S). Official icons and notice text only. Rest t
 - Weather warnings: HKO Open Data `warnsum` + `warningInfo`
 - Icons: HKO / Labour Department originals in `apps/kiosk/public/official/`
 
-Ingest polls those feeds every 60s. The display refreshes `/api/v1/snapshot` every 30s. Production never uses the preview overlay.
+Ingest polls those feeds every 60s. The display refreshes `/api/v1/snapshot` every 30s.
 
 ## Local run
 
 ```bash
-# API
 .venv/Scripts/python.exe -m uvicorn app.main:app --app-dir services/ingest --host 127.0.0.1 --port 8000
-
-# Display (another terminal)
 cd apps/kiosk && npm install && npm run dev
 ```
 
-- http://localhost:5173/?live=1 — **live** fullscreen (landscape or portrait; same page). Auto-updates from HKO / Labour Department. (`?kiosk=1` still works.)
-- http://localhost:5173/ — same live snapshot (cursor visible).
-- http://localhost:5173/?preview=1 — fixture preview only (does not replace live snapshot). (`?sim=1` still works.)
-- http://localhost:5173/?gallery=1 — every official icon and every signal case.
+- http://localhost:5173/ or `/?live=1` — live fullscreen (auto-updates)
+- http://localhost:5173/?preview=1 — fixture preview (does not replace live snapshot)
+- http://localhost:5173/?gallery=1 — every official icon and signal case
 
 `python -m pytest tests -q` (use `.venv/Scripts/python.exe`).
 
-Docker: `docker compose up --build` then http://127.0.0.1:8080/?live=1
+## Deploy
+
+```bash
+docker compose up --build -d
+```
+
+Open http://127.0.0.1:8080/ (live). Do not commit `.env` or real site names; copy `config/sites/demo-site.json`.
