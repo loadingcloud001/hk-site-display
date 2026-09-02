@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { present, type Snapshot } from "./present";
 
 const params = new URLSearchParams(window.location.search);
@@ -18,6 +18,13 @@ async function loadSnap(): Promise<Snapshot> {
   const r = await fetch("/api/v1/snapshot");
   if (!r.ok) throw new Error("snapshot");
   return r.json();
+}
+
+function readLayout(): "portrait" | "ultrawide" | "landscape" {
+  const r = window.innerWidth / Math.max(window.innerHeight, 1);
+  if (r > 2.5) return "ultrawide";
+  if (r < 0.75) return "portrait";
+  return "landscape";
 }
 
 type CaseBtn = { id: string; labelZh: string };
@@ -80,12 +87,18 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
       .catch(() => undefined);
   }, []);
 
-  const layout = useMemo(() => {
-    const r = window.innerWidth / Math.max(window.innerHeight, 1);
-    if (r > 2.5) return "ultrawide";
-    if (r < 0.75) return "portrait";
-    return "landscape";
-  }, [snap]);
+  const [layout, setLayout] = useState(readLayout);
+
+  useEffect(() => {
+    const onResize = () => setLayout(readLayout());
+    onResize();
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, []);
 
   async function sim(name: string) {
     await fetch("/api/v1/sim", {

@@ -21,7 +21,7 @@ cd apps/kiosk && npm install && npm run dev
 ```
 
 Open http://localhost:5173/?gallery=1 — every official icon and every signal case, including simultaneous warnings.
-Open http://localhost:5173/?sim=1 — fullscreen canteen kiosk (one action + icon rail). None is dark, never white.
+Open http://localhost:5173/?kiosk=1 — production canteen (landscape or portrait; same page).
 
 `python -m pytest tests -q` (use `.venv/Scripts/python.exe`).
 
