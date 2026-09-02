@@ -1,0 +1,18 @@
+{
+  "MessageTC1": "勞工處提醒您：",
+  "MessageTC2": "黃色工作暑熱警告在今日下午2時40分生效，表示部分工作環境下的熱壓力頗高，請採取適當的防暑措施。",
+  "MessageTC3": "以上訊息於2024年7月14日14時35分發出",
+  "MessageEN1": "A reminder from the Labour Department:",
+  "MessageEN2": "Amber Heat Stress at Work Warning is in effect today at 2:40 pm, indicating that the heat stress in some work environments is high.\nPlease take appropriate heat preventive measures.",
+  "MessageEN3": "This message was issued at 14:35 on 14/07/2024",
+  "TitleTC": "黃色工作暑熱警告",
+  "TitleEN": "Amber Heat Stress at Work Warning",
+  "TitleSC": "黃色工作暑热警告",
+  "iconIndex": 30,
+  "startIndexTC": 43,
+  "endIndexTC": 47,
+  "startIndexEN": 156,
+  "endIndexEN": 180,
+  "date": "202407141435",
+  "Push": true
+}

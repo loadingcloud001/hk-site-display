@@ -1,0 +1,10 @@
+{
+  "WTCSGNL": {
+    "name": "熱帶氣旋警告信號",
+    "code": "TC1",
+    "actionCode": "ISSUE",
+    "type": "一號戒備信號",
+    "issueTime": "2026-08-31T18:10:00+08:00",
+    "updateTime": "2026-08-31T18:10:00+08:00"
+  }
+}

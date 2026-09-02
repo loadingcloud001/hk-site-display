@@ -1,0 +1,18 @@
+{
+  "MessageTC1": "勞工處提醒你：",
+  "MessageTC2": "工作暑熱警告在今日下午6時50分取消。",
+  "MessageTC3": "以上訊息於2026年8月29日18時45分發出",
+  "MessageEN1": "A reminder from the Labour Department:",
+  "MessageEN2": "The Heat Stress at Work Warning has been cancelled today at 6:50 pm.",
+  "MessageEN3": "This message was issued at 18:45 on 29/08/2026",
+  "TitleTC": "工作暑熱警告",
+  "TitleEN": "Heat Stress at Work Warning",
+  "TitleSC": "工作暑热警告",
+  "iconIndex": -1,
+  "startIndexTC": 0,
+  "endIndexTC": 0,
+  "startIndexEN": 0,
+  "endIndexEN": 0,
+  "date": "202608291845",
+  "Push": true
+}

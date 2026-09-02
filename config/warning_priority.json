@@ -1,0 +1,7 @@
+{
+  "P0": ["TC8NE", "TC8SE", "TC8NW", "TC8SW", "TC8", "TC9", "TC10", "WRAINB", "WL"],
+  "P1": ["TC3", "WRAINR", "WTS", "WTCPRE8"],
+  "P2_hsww": ["red", "black"],
+  "P3_hsww": ["amber"],
+  "P3_hko": ["TC1", "WRAINA", "WHOT"]
+}

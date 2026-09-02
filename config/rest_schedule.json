@@ -1,0 +1,28 @@
+{
+  "outdoor": {
+    "none": {
+      "light": {"work": 120, "rest": 10, "suspend": false, "perHours": 2},
+      "moderate": {"work": 120, "rest": 10, "suspend": false, "perHours": 2},
+      "heavy": {"work": 120, "rest": 15, "suspend": false, "perHours": 2},
+      "very_heavy": {"work": 120, "rest": 15, "suspend": false, "perHours": 2}
+    },
+    "amber": {
+      "light": {"work": 60, "rest": 0, "suspend": false},
+      "moderate": {"work": 45, "rest": 15, "suspend": false},
+      "heavy": {"work": 30, "rest": 30, "suspend": false},
+      "very_heavy": {"work": 15, "rest": 45, "suspend": false}
+    },
+    "red": {
+      "light": {"work": 45, "rest": 15, "suspend": false},
+      "moderate": {"work": 30, "rest": 30, "suspend": false},
+      "heavy": {"work": 15, "rest": 45, "suspend": false},
+      "very_heavy": {"work": 0, "rest": 60, "suspend": true}
+    },
+    "black": {
+      "light": {"work": 30, "rest": 30, "suspend": false},
+      "moderate": {"work": 15, "rest": 45, "suspend": false},
+      "heavy": {"work": 0, "rest": 60, "suspend": true},
+      "very_heavy": {"work": 0, "rest": 60, "suspend": true}
+    }
+  }
+}
