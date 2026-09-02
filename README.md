@@ -31,4 +31,4 @@ cd apps/kiosk && npm install && npm run dev
 docker compose up --build -d
 ```
 
-Open http://127.0.0.1:8080/ (live). Do not commit `.env` or real site names; copy `config/sites/demo-site.json`.
+Open http://SERVER_IP/ (live). Do not commit `.env` or real site names; copy `config/sites/demo-site.json`.
