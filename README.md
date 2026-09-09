@@ -1,17 +1,17 @@
 # hk-site-display
 
-Hong Kong construction-site **live display** for Labour Department Heat Stress at Work Warning (HSWW) and HKO extreme weather.
+Hong Kong construction **site notice**: live Labour Department Heat Stress at Work Warning (HSWW) and HKO extreme weather on one screen at the gate.
 
-Not a Smart Site Safety System (4S). Not a sensor product. Official HKO / Labour Department icons and notice wording only. Rest times follow *Guidance Notes on Prevention of Heat Stroke at Work* (3rd ed.) Appendix 4.
+Official HKO / Labour Department icons and notice wording only. Rest times follow *Guidance Notes on Prevention of Heat Stroke at Work* (3rd ed.) Appendix 4. Not a 4S system. Not a sensor product.
 
-One URL, two orientations: **16:9 canteen TV** and **9:16 totem**. Two-second glance: one action, every in-force sign in the rail.
+Same URL for landscape and portrait. Two-second glance: one action, every in-force sign in the rail.
 
 ## Live demo
 
 | | |
 |---|---|
-| Live (canteen / TV) | https://hksite-display.loadingtechnology.app/ |
-| Preview (fixtures, does not overlay live) | https://hksite-display.loadingtechnology.app/?preview=1 |
+| Live | https://hksite-display.loadingtechnology.app/ |
+| Preview (switch cases; does not overlay live) | https://hksite-display.loadingtechnology.app/?preview=1 |
 | Gallery (every official icon + case) | https://hksite-display.loadingtechnology.app/?gallery=1 |
 
 ![Live 16:9 — 正常工作](docs/demo/live-16x9.png)
@@ -20,11 +20,11 @@ One URL, two orientations: **16:9 canteen TV** and **9:16 totem**. Two-second gl
 
 ![Signal 8 NE — 留在室內](docs/demo/tc8.png)
 
-Same URL on a portrait totem:
+Same URL, portrait:
 
 ![Live 9:16](docs/demo/live-9x16.png)
 
-## Rules the display will not break
+## Rules the notice will not break
 
 - HSWW level comes only from `hkhi_icon.xml` `iconIndex` (30 amber / 32 red / 34 black). Never inferred from HKHI CSV or the title string.
 - Rest minutes live in `config/rest_schedule.json` only.
@@ -37,7 +37,7 @@ Same URL on a portrait totem:
 - Weather warnings: HKO Open Data `warnsum` + `warningInfo`
 - Icons: originals in `apps/kiosk/public/official/`
 
-Ingest polls every 60s. The display refreshes `/api/v1/snapshot` every 30s.
+Ingest polls every 60s. The notice refreshes `/api/v1/snapshot` every 30s.
 
 ## Local run
 
