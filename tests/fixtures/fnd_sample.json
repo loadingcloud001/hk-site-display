@@ -1,0 +1,9 @@
+{
+  "updateTime": "2026-10-06T16:30:00+08:00",
+  "weatherForecast": [
+    {"forecastDate": "20261007", "week": "星期三", "ForecastIcon": 81,
+     "forecastMaxtemp": {"value": 30, "unit": "C"}, "forecastMintemp": {"value": 23, "unit": "C"}},
+    {"forecastDate": "20261008", "week": "星期四", "ForecastIcon": 51,
+     "forecastMaxtemp": {"value": 30, "unit": "C"}, "forecastMintemp": {"value": 25, "unit": "C"}}
+  ]
+}
