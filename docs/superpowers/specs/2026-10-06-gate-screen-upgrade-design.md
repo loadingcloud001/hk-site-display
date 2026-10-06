@@ -212,8 +212,8 @@ WRAINR and WL are weather states, so their supervisor instructions are covered b
 
 - **Current weather** (rhrread, `lang=tc`):
   - The icon is `icon[0]` → `official/wxicon/pic{code}.png`.
-  - Temperature comes from the site's `weatherStation` (default: the site's `district`). If that station is missing, use 香港天文台 and show that place name instead.
-  - Humidity comes from 香港天文台, the only station HKO reports for it.
+  - Temperature comes from the station nearest the screen's position, else the site's `weatherStation`, else 香港天文台; the place name is always shown (see `2026-10-06-weather-station-by-location-design.md`).
+  - Humidity is shown only next to 香港天文台, the only station HKO reports it for.
   - UV shows `value` and `desc` from 京士柏 (e.g. 紫外線 5 中等). It is hidden when the feed returns an empty string, for example at night.
 - **Tomorrow** (fnd, `lang=tc`): the first `weatherForecast` entry with `forecastDate` later than today (HKT). It shows `ForecastIcon`, `forecastMintemp` and `forecastMaxtemp` as 明日 23–30°.
 - **Freshness:** hide the weather block if rhrread `updateTime` is more than 90 minutes old. Hide the forecast if fnd `updateTime` is more than 12 hours old.
@@ -251,8 +251,6 @@ WRAINR and WL are weather states, so their supervisor instructions are covered b
 {
   "siteId": "demo-kai-tak",
   "nameZh": "示範地盤",
-  "district": "觀塘",
-  "weatherStation": "觀塘",
   "environment": "outdoor",
   "restAdjustMinutes": 0,
   "defaultWorkload": "very_heavy",
@@ -399,7 +397,7 @@ The legacy fields `display.action` and `display.actionSub` are still filled in, 
 | warningInfo fails | Keep the last value; Pre-8 detection uses the cached data |
 | rhrread fails or is >90 min old | Hide the weather block; nothing else changes |
 | fnd fails or is >12 h old | Hide the forecast |
-| `weatherStation` missing from rhrread | Use 香港天文台 and show that name |
+| A station has no reading in rhrread | Use the next candidate (nearest station, then the site's `weatherStation`, then 香港天文台) and show its name |
 | Unknown weather icon code | Hide the icon, keep the numbers |
 | UV empty string | Hide UV |
 | Effective time can't be parsed | Use the message time `date` |
@@ -456,6 +454,7 @@ Run this each April, before the hot season, and whenever LD or HKO announce revi
 1. Re-download the two LD PDFs and compare edition, App. 1, App. 4, App. 4(a), §4.7.1, §5.4.4, §5.5.4 and App. 6 with `rest_schedule.json` and `display_actions.json`.
 2. Re-read the HKO advice pages in §3 and update the quotes. The wording-guard test then forces matching screen text.
 3. Update `sources[*].checked` dates.
+4. Run `python3 scripts/fetch_hko_stations.py --check`. It compares `config/hko_stations.json` with HKO's station page and reports any station in the live weather report that has no coordinates yet.
 
 ## 10. Known gaps (later sub-projects)
 
