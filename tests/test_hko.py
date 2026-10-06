@@ -1,4 +1,4 @@
-from app.hko import active_codes, parse_warnsum, parse_warning_info
+from app.hko import active_codes, parse_warnsum, parse_warnsum_events, parse_warning_info
 
 
 def test_empty():
@@ -29,3 +29,26 @@ def test_pre8_from_warning_info():
 
 def test_missing_details_ok():
     assert parse_warning_info({}) == []
+
+
+def test_events_keep_cancellations_with_times():
+    raw = {
+        "WRAIN": {
+            "name": "暴雨警告信號", "code": "WRAINB", "type": "黑色暴雨警告信號", "actionCode": "CANCEL",
+            "issueTime": "2026-06-18T08:20:00+08:00", "updateTime": "2026-06-18T10:05:00+08:00",
+        },
+        "WTCSGNL": {
+            "name": "熱帶氣旋警告信號", "code": "TC3", "type": "三號強風信號", "actionCode": "ISSUE",
+            "issueTime": "2026-06-18T09:40:00+08:00", "updateTime": "2026-06-18T09:40:00+08:00",
+        },
+    }
+    events = {e["code"]: e for e in parse_warnsum_events(raw)}
+    assert events["WRAINB"]["actionCode"] == "CANCEL"
+    assert events["WRAINB"]["updateTime"] == "2026-06-18T10:05:00+08:00"
+    assert events["TC3"]["type"] == "三號強風信號"
+    assert [w["code"] for w in parse_warnsum(raw)] == ["TC3"]
+
+
+def test_events_ignore_bad_input():
+    assert parse_warnsum_events({"x": "y"}) == []
+    assert parse_warnsum_events(None) == []
