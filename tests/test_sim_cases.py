@@ -35,6 +35,14 @@ REQUIRED = [
     "rain-black-amber",
     "pre8-amber",
     "stale",
+    "amber-new",
+    "hsww-cancel-new",
+    "tc8ne-new",
+    "rain-black-cancel",
+    "rain-amber-tc3",
+    "trades-indoor",
+    "weather-old",
+    "forecast-old",
 ]
 
 
@@ -45,12 +53,13 @@ def test_catalog_covers_all_signals():
         assert rid in ids
 
 
-def test_none_is_idle_without_white_weather_tile():
+def test_none_is_a_normal_day_with_weather():
     snap = build_case("none")
     assert snap["hsww"]["inForce"] is False
     assert snap["priority"]["band"] == "P4"
     assert snap["tone"] == "idle"
-    assert snap["hko"]["wxIconRel"] is None
+    assert snap["display"]["mode"] == "normal"
+    assert snap["hko"]["wxIconRel"] == "official/wxicon/pic51.png"
     assert snap["hko"]["icons"] == []
     assert snap["hko"]["headlineZh"] == ""
     assert snap["site"]["tradeZh"] == "紮鐵"
@@ -205,3 +214,39 @@ def test_gallery_weather_icons_use_official_names():
     assert by["pic50"] == "陽光充沛"
     assert by["pic62"] == "微雨"
     assert by["pic90"] == "熱"
+
+
+def test_banner_cases():
+    amber_new = build_case("amber-new")["banner"]
+    assert (amber_new["time"], amber_new["textZh"]) == ("14:42", "黃色工作暑熱警告 生效")
+    assert build_case("hsww-cancel-new")["banner"]["textZh"] == "工作暑熱警告 取消"
+    assert build_case("tc8ne-new")["banner"]["textZh"] == "八號東北烈風或暴風信號 發出"
+    assert build_case("rain-black-cancel")["banner"]["textZh"] == "黑色暴雨警告信號 取消"
+    assert build_case("amber")["banner"] is None
+    assert build_case("stale")["banner"] is None
+
+
+def test_weather_freshness_cases():
+    none = build_case("none")
+    assert none["weather"]["placeZh"] == "觀塘"
+    assert none["forecast"]["date"] == "20260716"
+    assert build_case("weather-old")["weather"] is None
+    assert build_case("forecast-old")["forecast"] is None
+
+
+def test_indoor_and_aircon_trades():
+    tiles = build_case("trades-indoor")["restTiles"]
+    assert [(t["kind"], t["rest"], t["tradesZh"]) for t in tiles] == [
+        ("rest", 45, "紮鐵"),
+        ("rest", 30, "焊接"),
+        ("baseline", 10, "室內裝修 · 電工"),
+    ]
+
+
+def test_two_supervisor_lines():
+    lines = build_case("rain-amber-tc3")["supervisor"]
+    assert [line["text"] for line in lines] == ["停止操作起重機、吊船", "停止操作吊船、進行斜坡工程"]
+
+
+def test_pre8_shows_the_signal_in_force():
+    assert build_case("pre8-amber")["display"]["heroRel"] == "official/warning/tc3.png"
