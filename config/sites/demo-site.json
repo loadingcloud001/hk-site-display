@@ -3,14 +3,18 @@
   "nameZh": "示範地盤",
   "nameEn": "Demo Site",
   "district": "觀塘",
+  "weatherStation": "觀塘",
   "defaultWorkload": "very_heavy",
   "environment": "outdoor",
   "restAdjustMinutes": 0,
   "primaryTrades": [
-    {
-      "id": "bar-fixer",
-      "labelZh": "紮鐵",
-      "workload": "very_heavy"
-    }
+    { "id": "bar-fixer", "labelZh": "紮鐵", "workload": "very_heavy" },
+    { "id": "scaffolder", "labelZh": "棚架", "workload": "very_heavy" },
+    { "id": "formwork", "labelZh": "釘板", "workload": "heavy" },
+    { "id": "concreter", "labelZh": "混凝土", "workload": "heavy" },
+    { "id": "plumber", "labelZh": "水喉", "workload": "moderate" },
+    { "id": "welder", "labelZh": "焊接", "workload": "moderate" },
+    { "id": "security", "labelZh": "保安", "workload": "light" },
+    { "id": "inspector", "labelZh": "檢查", "workload": "light" }
   ]
 }

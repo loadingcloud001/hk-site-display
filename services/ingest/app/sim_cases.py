@@ -2,10 +2,11 @@ import json
 from pathlib import Path
 
 from app.snapshot import build_snapshot
+from app.site import validate_site
 
 ROOT = Path(__file__).resolve().parents[3]
 FIX = ROOT / "tests" / "fixtures"
-SITE = json.loads((ROOT / "config/sites/demo-site.json").read_text(encoding="utf-8"))
+SITE = validate_site(json.loads((ROOT / "config/sites/demo-site.json").read_text(encoding="utf-8")))
 SCHEDULE = json.loads((ROOT / "config/rest_schedule.json").read_text(encoding="utf-8"))
 ICONS = json.loads((ROOT / "config/official_icons.json").read_text(encoding="utf-8"))
 

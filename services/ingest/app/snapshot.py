@@ -6,6 +6,7 @@ from app.hko import PRE8_NAME, active_codes, parse_warning_info, parse_warnsum
 from app.hsww import parse_hkhi_icon
 from app.priority import classify
 from app.rest import lookup
+from app.site import WORKLOAD_ZH
 
 HKT = timezone(timedelta(hours=8))
 ROOT = Path(__file__).resolve().parents[3]
@@ -20,12 +21,6 @@ HSWW_LABEL = {
     "amber": "黃色工作暑熱警告",
     "red": "紅色工作暑熱警告",
     "black": "黑色工作暑熱警告",
-}
-WORKLOAD_ZH = {
-    "light": "輕勞動",
-    "moderate": "中等勞動",
-    "heavy": "重勞動",
-    "very_heavy": "極重勞動",
 }
 
 
