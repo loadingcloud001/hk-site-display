@@ -2,7 +2,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import json
 
-from app.hko import parse_warnsum, parse_warning_info, active_codes
+from app.hko import PRE8_NAME, active_codes, parse_warning_info, parse_warnsum
 from app.hsww import parse_hkhi_icon
 from app.priority import classify
 from app.rest import lookup
@@ -15,7 +15,7 @@ P0 = {"TC8NE", "TC8SE", "TC8NW", "TC8SW", "TC8", "TC9", "TC10", "WRAINB", "WL"}
 P1 = {"TC3", "WRAINR", "WTS", "WTCPRE8"}
 
 
-PRE8_CAPTION = "預警八號熱帶氣旋警告信號"
+PRE8_CAPTION = PRE8_NAME
 HSWW_LABEL = {
     "amber": "黃色工作暑熱警告",
     "red": "紅色工作暑熱警告",
@@ -23,7 +23,7 @@ HSWW_LABEL = {
 }
 WORKLOAD_ZH = {
     "light": "輕勞動",
-    "moderate": "中勞動",
+    "moderate": "中等勞動",
     "heavy": "重勞動",
     "very_heavy": "極重勞動",
 }

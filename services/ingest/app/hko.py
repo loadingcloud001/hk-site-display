@@ -1,3 +1,6 @@
+# Official name, HKO Open Data API documentation (TC), warningStatementCode WTCPRE8.
+PRE8_NAME = "預警八號熱帶氣旋警告信號之特別報告"
+
 ACTIVE = {"ISSUE", "REISSUE", "EXTEND", "UPDATE"}
 
 

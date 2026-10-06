@@ -20,5 +20,5 @@ def test_caption_empty_when_no_warnings():
 def test_pre8_caption_from_warning_info():
     assert (
         weather_caption([], [{"code": "WTCPRE8", "contents": ["長文公報不應該出現"]}])
-        == "預警八號熱帶氣旋警告信號"
+        == "預警八號熱帶氣旋警告信號之特別報告"
     )

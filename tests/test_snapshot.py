@@ -47,3 +47,14 @@ def test_stale_cancel_not_in_force():
     )
     assert snap["hsww"]["inForce"] is False
     assert snap["priority"]["band"] == "P4"
+
+
+def test_workload_labels_are_official():
+    from app.snapshot import WORKLOAD_ZH
+
+    assert WORKLOAD_ZH == {
+        "light": "輕勞動",
+        "moderate": "中等勞動",
+        "heavy": "重勞動",
+        "very_heavy": "極重勞動",
+    }
