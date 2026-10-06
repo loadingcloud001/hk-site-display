@@ -1,7 +1,6 @@
 from datetime import datetime, timezone, timedelta
-from pathlib import Path
-import json
 
+from app.actions import load_actions, validate_actions, weather_by_code
 from app.hko import PRE8_NAME, active_codes, parse_warning_info, parse_warnsum
 from app.hsww import parse_hkhi_icon
 from app.priority import classify
@@ -9,8 +8,9 @@ from app.rest import lookup
 from app.site import WORKLOAD_ZH
 
 HKT = timezone(timedelta(hours=8))
-ROOT = Path(__file__).resolve().parents[3]
-ACTIONS = json.loads((ROOT / "config" / "display_actions.json").read_text(encoding="utf-8"))
+
+ACTIONS = validate_actions(load_actions())
+WEATHER = weather_by_code(ACTIONS)
 
 P0 = {"TC8NE", "TC8SE", "TC8NW", "TC8SW", "TC8", "TC9", "TC10", "WRAINB", "WL"}
 P1 = {"TC3", "WRAINR", "WTS", "WTCPRE8"}
@@ -51,14 +51,13 @@ def is_high_impact(code: str, kind: str = "") -> bool:
 
 
 def build_display(hsww: dict, rest: dict, signals: list) -> dict:
-    weather = ACTIONS.get("weather") or {}
     for s in signals or []:
-        spec = weather.get(s.get("code") or "")
+        spec = WEATHER.get(s.get("code") or "")
         if not spec:
             continue
         return {
-            "action": spec["action"],
-            "actionSub": spec.get("sub") or s.get("labelZh") or "",
+            "action": spec["main"],
+            "actionSub": (spec.get("sub") or [s.get("labelZh") or ""])[0],
         }
     if rest.get("suspend"):
         return {
@@ -195,8 +194,7 @@ def build_snapshot(
     signals = build_signals(hsww, warnings, codes, icons_map)
     rest_display = build_display(hsww, rest, signals)
     tone = snapshot_tone(pri, hsww, codes, False)
-    weather_act = ACTIONS.get("weather") or {}
-    win = next((s.get("code") for s in signals if weather_act.get(s.get("code") or "")), None)
+    win = next((s.get("code") for s in signals if WEATHER.get(s.get("code") or "")), None)
     if win:
         if str(win).startswith("TC8") or win in {"TC9", "TC10"}:
             tone = "p0-tc"

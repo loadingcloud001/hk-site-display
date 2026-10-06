@@ -75,7 +75,7 @@ def test_black_rain_caption_not_typhoon():
 def test_pre8_has_short_caption():
     snap = build_case("pre8")
     assert snap["priority"]["band"] == "P1"
-    assert snap["display"]["action"] == "盡早返回有蓋處"
+    assert snap["display"]["action"] == "分批離開工作地點"
     assert "八號" in snap["display"]["actionSub"]
     codes = [s["code"] for s in snap["signals"]]
     assert "WTCPRE8" in codes
@@ -84,10 +84,10 @@ def test_pre8_has_short_caption():
 
 def test_winning_weather_action_sets_tone_not_leftover_hsww():
     pre8a = build_case("pre8-amber")
-    assert pre8a["display"]["action"] == "盡早返回有蓋處"
+    assert pre8a["display"]["action"] == "分批離開工作地點"
     assert pre8a["tone"] == "p1"
     stack = build_case("typhoon-stack")
-    assert stack["display"]["action"] == "留在室內"
+    assert stack["display"]["action"] == "分批離開工作地點"
     assert stack["tone"] == "p0-tc"
 
 
@@ -109,15 +109,18 @@ def test_tc8_plus_amber_is_stop_with_hsww_still_listed():
 
 
 def test_official_display_actions():
-    assert build_case("tc8ne")["display"]["action"] == "留在室內"
+    assert build_case("tc8ne")["display"]["action"] == "分批離開工作地點"
     assert build_case("tc9")["display"]["action"] == "切勿外出"
-    assert build_case("rain-black")["display"]["action"] == "暫停戶外工作"
+    assert build_case("tc10")["display"]["action"] == "切勿離開有遮蔽的地方"
+    assert build_case("rain-black")["display"]["action"] == "停止戶外作業"
     assert "暫避" in build_case("rain-black")["display"]["actionSub"]
-    assert build_case("landslip")["display"]["action"] == "遠離斜坡"
+    assert build_case("rain-red")["display"]["action"] == "暫停戶外作業"
+    assert build_case("landslip")["display"]["action"] == "避免靠近陡峭的斜坡和護土牆"
+    assert build_case("tsunami")["display"]["action"] == "遠離岸邊"
     assert build_case("amber")["display"]["action"] == "休息 45 分鐘"
     assert build_case("red")["display"]["action"] == "暫停工作"
     assert build_case("none")["display"]["action"] == "正常工作"
-    assert build_case("pre8")["display"]["action"] == "盡早返回有蓋處"
+    assert build_case("pre8")["display"]["action"] == "分批離開工作地點"
     for name in ("tc1", "tc3", "rain-amber", "thunderstorm", "vhot"):
         snap = build_case(name)
         assert snap["signals"], name
