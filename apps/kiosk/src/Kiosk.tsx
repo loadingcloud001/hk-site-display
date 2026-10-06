@@ -1,21 +1,26 @@
-import { useEffect, useState } from "react";
-import { present, type Snapshot } from "./present";
+import { useEffect, useRef, useState } from "react";
+import { clockNow, dateZh, type Snapshot } from "./present";
+import { Screen } from "./Screen";
 
 const params = new URLSearchParams(window.location.search);
 const flag = (...keys: string[]) => keys.some((k) => params.get(k) === "1");
 const PREVIEW = flag("preview", "sim");
 const LIVE = !PREVIEW || flag("live", "kiosk");
 const FIXTURE = params.get("fixture");
+// ?bar=0 hides the preview buttons, for screenshots and showing a case on a real screen.
+const SHOW_BAR = params.get("bar") !== "0";
 const POLL_MS = 30_000;
 
-function clockNow(): string {
-  return new Date().toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Asia/Hong_Kong",
-  });
-}
+type CaseBtn = { id: string; labelZh: string };
+
+const FALLBACK_CASES: CaseBtn[] = [
+  { id: "none", labelZh: "無警告" },
+  { id: "amber", labelZh: "黃色暑熱" },
+  { id: "red", labelZh: "紅色暑熱" },
+  { id: "black", labelZh: "黑色暑熱" },
+  { id: "tc8ne", labelZh: "八號東北" },
+  { id: "rain-black", labelZh: "黑色暴雨" },
+];
 
 async function loadSnap(): Promise<Snapshot> {
   const r = await fetch("/api/v1/snapshot");
@@ -23,30 +28,20 @@ async function loadSnap(): Promise<Snapshot> {
   return r.json();
 }
 
-function readLayout(): "portrait" | "ultrawide" | "landscape" {
-  const r = window.innerWidth / Math.max(window.innerHeight, 1);
-  if (r > 2.5) return "ultrawide";
-  if (r < 0.75) return "portrait";
-  return "landscape";
+function readLayout(): "portrait" | "landscape" {
+  return window.innerWidth / Math.max(window.innerHeight, 1) < 0.75 ? "portrait" : "landscape";
 }
 
-type CaseBtn = { id: string; labelZh: string };
-
-function Sign({ rel, label, hero }: { rel: string; label: string; hero?: boolean }) {
-  return (
-    <span className={hero ? "sign sign-hero" : "sign"}>
-      <img src={"/" + rel} alt={label} />
-    </span>
-  );
-}
-
-export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
-  const [snap, setSnap] = useState<Snapshot | null>(snapshot ?? null);
+export function Kiosk() {
+  const [snap, setSnap] = useState<Snapshot | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [cases, setCases] = useState<CaseBtn[]>([]);
   const [clock, setClock] = useState(clockNow);
+  const [date, setDate] = useState(dateZh);
   const [holdSim, setHoldSim] = useState(false);
   const [layout, setLayout] = useState(readLayout);
+  // Once a preview case is requested, a late live response must never overwrite it.
+  const holdSimRef = useRef(Boolean(PREVIEW && !LIVE && FIXTURE));
 
   useEffect(() => {
     document.documentElement.classList.toggle("live", LIVE);
@@ -54,13 +49,15 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
   }, []);
 
   useEffect(() => {
-    const id = setInterval(() => setClock(clockNow()), 1000);
+    const id = setInterval(() => {
+      setClock(clockNow());
+      setDate(dateZh());
+    }, 1000);
     return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
     const onResize = () => setLayout(readLayout());
-    onResize();
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
     return () => {
@@ -70,21 +67,17 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
   }, []);
 
   useEffect(() => {
-    if (snapshot) {
-      setSnap(snapshot);
-      return;
-    }
-    if (holdSim) return;
+    if (holdSim || holdSimRef.current) return;
     let alive = true;
     const tick = async () => {
       try {
         const s = await loadSnap();
-        if (alive) {
+        if (alive && !holdSimRef.current) {
           setSnap(s);
           setErr(null);
         }
       } catch {
-        if (alive) setErr("無法取得資料 — 請以我的天文台為準");
+        if (alive && !holdSimRef.current) setErr("無法取得資料 — 請以我的天文台為準");
       }
     };
     tick();
@@ -93,25 +86,24 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
       alive = false;
       clearInterval(id);
     };
-  }, [snapshot, holdSim]);
+  }, [holdSim]);
 
   useEffect(() => {
     if (!PREVIEW || LIVE) return;
     fetch("/api/v1/sim/cases")
       .then((r) => r.json())
-      .then((d) => {
-        setCases((d.cases || []).map((c: CaseBtn) => ({ id: c.id, labelZh: c.labelZh })));
-      })
+      .then((d) => setCases((d.cases || []).map((c: CaseBtn) => ({ id: c.id, labelZh: c.labelZh }))))
       .catch(() => undefined);
   }, []);
 
   useEffect(() => {
-    if (!PREVIEW || LIVE || !FIXTURE || snapshot) return;
+    if (!PREVIEW || LIVE || !FIXTURE) return;
     void sim(FIXTURE);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function sim(name: string) {
+    holdSimRef.current = true;
     const r = await fetch("/api/v1/sim", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -131,56 +123,22 @@ export function Kiosk({ snapshot }: { snapshot?: Snapshot }) {
     );
   }
 
-  const view = present(snap);
+  const simbar =
+    PREVIEW && !LIVE && SHOW_BAR ? (
+      <div className="simbar">
+        <a className="sim-link" href="/">
+          Live
+        </a>
+        <a className="sim-link" href="/?gallery=1">
+          Gallery
+        </a>
+        {(cases.length ? cases : FALLBACK_CASES).map((n) => (
+          <button key={n.id} type="button" onClick={() => sim(n.id)}>
+            {n.labelZh}
+          </button>
+        ))}
+      </div>
+    ) : null;
 
-  return (
-    <div
-      className="stage"
-      data-layout={layout}
-      data-heat={view.heat}
-      data-band={view.band}
-      data-signal={view.signal}
-      data-tone={view.tone}
-    >
-      {PREVIEW && !LIVE && (
-        <div className="simbar">
-          <a className="sim-link" href="/">
-            Live
-          </a>
-          <a className="sim-link" href="/?gallery=1">
-            Gallery
-          </a>
-          {(cases.length
-            ? cases
-            : [
-                { id: "none", labelZh: "無警告" },
-                { id: "amber", labelZh: "黃色暑熱" },
-                { id: "red", labelZh: "紅色暑熱" },
-                { id: "black", labelZh: "黑色暑熱" },
-                { id: "tc8ne", labelZh: "八號東北" },
-                { id: "rain-black", labelZh: "黑色暴雨" },
-              ]
-          ).map((n) => (
-            <button key={n.id} type="button" onClick={() => sim(n.id)}>
-              {n.labelZh}
-            </button>
-          ))}
-        </div>
-      )}
-      {view.stale && <div className="stale">資料過期 — 請以我的天文台為準</div>}
-      <div className="hero">
-        {view.heroIcon && <Sign rel={view.heroIcon} label="" hero />}
-        <div>
-          <p className="action">{view.action}</p>
-          {view.actionSub && <p className="action-sub">{view.actionSub}</p>}
-        </div>
-      </div>
-      <div className="footer">
-        <div className="rail">
-          {view.rail.map((s) => s.rel && <Sign key={s.code} rel={s.rel} label={s.labelZh} />)}
-        </div>
-        <span className="clock">{clock}</span>
-      </div>
-    </div>
-  );
+  return <Screen snap={snap} clock={clock} date={date} layout={layout} simbar={simbar} />;
 }
