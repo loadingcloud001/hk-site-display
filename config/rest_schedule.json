@@ -1,4 +1,13 @@
 {
+  "_notes": [
+    "Source: Labour Department, Guidance Notes on Prevention of Heat Stroke at Work, 3rd edition (revised) August 2026.",
+    "outdoor = Appendix 4. Indoor work without air-conditioning = outdoor + environmentAdjust.indoor (paras 5.2.2 and 5.3.1); tests check this reproduces Appendix 4(a) exactly.",
+    "baseline = para 4.7.1; it applies when the adjusted hourly rest is zero or negative (para 5.5.4).",
+    "suspend=true cells keep the hourly rest the two appendices imply (the tables step 15 minutes per workload level and per warning level). outdoor black very_heavy is 75 because Appendix 4(a) still suspends it after the 15-minute indoor reduction.",
+    "An adjusted hourly rest of 60 minutes or more means suspension of work (para 5.4.5)."
+  ],
+  "baseline": {"light": 10, "moderate": 10, "heavy": 15, "very_heavy": 15, "perHours": 2},
+  "environmentAdjust": {"outdoor": 0, "indoor": -15},
   "outdoor": {
     "none": {
       "light": {"work": 120, "rest": 10, "suspend": false, "perHours": 2},
@@ -22,7 +31,7 @@
       "light": {"work": 30, "rest": 30, "suspend": false},
       "moderate": {"work": 15, "rest": 45, "suspend": false},
       "heavy": {"work": 0, "rest": 60, "suspend": true},
-      "very_heavy": {"work": 0, "rest": 60, "suspend": true}
+      "very_heavy": {"work": 0, "rest": 75, "suspend": true}
     }
   }
 }
