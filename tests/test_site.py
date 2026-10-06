@@ -46,10 +46,17 @@ def test_normal_workloads_fall_back_to_default():
     assert normal_workloads(DEMO) == {"light", "moderate", "heavy", "very_heavy"}
 
 
-def test_weather_station_defaults():
-    assert weather_station({"weatherStation": "沙田", "district": "觀塘"}) == "沙田"
-    assert weather_station({"district": "觀塘"}) == "觀塘"
+def test_weather_station_defaults_to_the_observatory():
+    assert weather_station({"weatherStation": "沙田"}) == "沙田"
+    assert weather_station({"district": "觀塘"}) == "香港天文台"
     assert weather_station({}) == "香港天文台"
+    assert weather_station(DEMO) == "香港天文台"
+
+
+def test_weather_station_must_be_a_known_hko_station():
+    validate_site({"weatherStation": "沙田"})
+    with pytest.raises(ValueError, match="weatherStation"):
+        validate_site({"weatherStation": "Sha Tin"})
 
 
 @pytest.mark.parametrize(

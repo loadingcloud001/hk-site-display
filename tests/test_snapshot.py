@@ -4,6 +4,7 @@ from pathlib import Path
 
 from app.hsww import parse_hkhi_icon
 from app.snapshot import build_snapshot
+from app.stations import Position
 
 ROOT = Path(__file__).resolve().parents[1]
 FIX = ROOT / "tests" / "fixtures"
@@ -119,9 +120,20 @@ def test_pre8_hero_is_the_signal_in_force():
 def test_weather_and_forecast_fields():
     now = datetime(2026, 10, 6, 17, 30, tzinfo=HKT)
     snap = build(rhrread=load("rhrread_sample.json"), fnd=load("fnd_sample.json"), now=now)
-    assert snap["weather"]["placeZh"] == "觀塘" and snap["weather"]["tempC"] == 28
+    assert snap["weather"]["placeZh"] == "香港天文台" and snap["weather"]["tempC"] == 27
+    assert snap["weather"]["humidity"] == 62
     assert snap["forecast"]["date"] == "20261007"
     assert snap["banner"] is None
+
+
+def test_weather_station_follows_position_then_site_then_observatory():
+    now = datetime(2026, 10, 6, 21, 30, tzinfo=HKT)
+    full = load("rhrread_full.json")
+    assert build(rhrread=full, now=now)["weather"]["placeZh"] == "香港天文台"
+    assert build(rhrread=full, now=now, site={**SITE, "weatherStation": "沙田"})["weather"]["placeZh"] == "沙田"
+    kwun_tong = Position(22.3125, 114.2260, 60)
+    near = build(rhrread=full, now=now, site={**SITE, "weatherStation": "沙田"}, position=kwun_tong)
+    assert (near["weather"]["placeZh"], near["weather"]["tempC"]) == ("觀塘", 25)
 
 
 def test_banner_shows_then_hides_when_stale():

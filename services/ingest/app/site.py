@@ -1,10 +1,10 @@
 """Site configuration: validation and the trade lists the screen works from."""
+from app.stations import OBSERVATORY, station_names
 
 WORKLOADS = ("light", "moderate", "heavy", "very_heavy")
 ENVIRONMENTS = ("outdoor", "indoor", "aircon")
 # Official labels, Labour Department guidance notes Appendix 1.
 WORKLOAD_ZH = {"light": "輕勞動", "moderate": "中等勞動", "heavy": "重勞動", "very_heavy": "極重勞動"}
-FALLBACK_STATION = "香港天文台"
 
 
 def _adjust_ok(value):
@@ -25,6 +25,9 @@ def validate_site(site):
         errors.append(f"defaultWorkload must be one of {WORKLOADS}")
     if not _adjust_ok(site.get("restAdjustMinutes", 0)):
         errors.append("restAdjustMinutes must be a multiple of 15 between -30 and 60")
+    station = site.get("weatherStation")
+    if station is not None and station not in station_names():
+        errors.append(f"weatherStation {station!r} is not an HKO temperature station (see config/hko_stations.json)")
     for i, trade in enumerate(site.get("primaryTrades") or []):
         where = f"primaryTrades[{i}]"
         if not trade.get("labelZh"):
@@ -74,4 +77,5 @@ def normal_workloads(site):
 
 
 def weather_station(site):
-    return site.get("weatherStation") or site.get("district") or FALLBACK_STATION
+    """The station shown when the screen has no usable position."""
+    return site.get("weatherStation") or OBSERVATORY

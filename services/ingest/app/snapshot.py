@@ -162,6 +162,7 @@ def build_snapshot(
     fnd=None,
     now=None,
     stale=False,
+    position=None,
 ):
     now = now or datetime.now(HKT)
     hsww = parse_hkhi_icon(hsww_raw or {})
@@ -234,6 +235,6 @@ def build_snapshot(
         "notes": notes,
         "supervisor": supervisor,
         "banner": build_banner(hsww, events, info, now, code_rank, stale),
-        "weather": parse_current(rhrread, weather_station(site), now),
+        "weather": parse_current(rhrread, weather_station(site), now, position),
         "forecast": parse_forecast(fnd, now),
     }

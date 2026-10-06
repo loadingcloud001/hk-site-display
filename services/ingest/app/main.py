@@ -1,9 +1,12 @@
 import json
+import logging
 import os
+import re
 import threading
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Optional
 
 import httpx
 from fastapi import FastAPI, HTTPException
@@ -13,6 +16,7 @@ from app.feeds import Feed, FeedSet
 from app.sim_cases import ALIASES, CASE_IDS, build_case, list_cases, list_official_icons
 from app.site import validate_site
 from app.snapshot import build_snapshot
+from app.stations import parse_position
 
 HKT = timezone(timedelta(hours=8))
 ROOT = Path(__file__).resolve().parents[3]
@@ -54,6 +58,21 @@ def make_feeds():
 FEEDS = make_feeds()
 
 
+class HidePosition(logging.Filter):
+    """The screen's position is only used to pick a weather station, so keep it out of the access log."""
+
+    PATTERN = re.compile(r"(?<=[?&])(lat|lon|acc)=[^&\s]*")
+
+    def filter(self, record):
+        args = record.args
+        if isinstance(args, tuple) and len(args) > 2 and isinstance(args[2], str):
+            record.args = (*args[:2], self.PATTERN.sub(r"\1=-", args[2]), *args[3:])
+        return True
+
+
+logging.getLogger("uvicorn.access").addFilter(HidePosition())
+
+
 def _poll(stop):
     while not stop.is_set():
         FEEDS.refresh_due()
@@ -89,7 +108,9 @@ def _stale(now):
 
 
 @app.get("/api/v1/snapshot")
-def snapshot():
+def snapshot(lat: Optional[str] = None, lon: Optional[str] = None, acc: Optional[str] = None):
+    # lat/lon/acc are the browser's position (rounded by the kiosk) and only choose the weather station.
+    # They are read as text so a bad value is ignored rather than failing a safety display with a 422.
     if not ENABLE_POLLER or FEEDS.never_fetched():
         FEEDS.refresh_due()
     if FEEDS.value("hsww") is None and FEEDS.value("warnsum") is None:
@@ -107,6 +128,7 @@ def snapshot():
         fnd=FEEDS.value("fnd") or {},
         now=now,
         stale=stale,
+        position=parse_position(lat, lon, acc),
     )
     snap["source"] = "live"
     return snap
