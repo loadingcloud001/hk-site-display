@@ -87,8 +87,8 @@ def test_winning_weather_action_sets_tone_not_leftover_hsww():
     assert pre8a["display"]["action"] == "分批離開工作地點"
     assert pre8a["tone"] == "p1"
     stack = build_case("typhoon-stack")
-    assert stack["display"]["action"] == "分批離開工作地點"
-    assert stack["tone"] == "p0-tc"
+    assert stack["display"]["action"] == "停止戶外作業"
+    assert stack["tone"] == "p0-rain"
 
 
 def test_amber_plus_tc1_keeps_rest_and_both_signals():
