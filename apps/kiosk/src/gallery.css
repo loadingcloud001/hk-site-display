@@ -91,7 +91,7 @@
 
 .case-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 14px;
 }
 
@@ -109,51 +109,14 @@
   text-align: left;
 }
 
-.case-tile .stage.mini {
-  height: 190px;
-  pointer-events: none;
-}
-
-.case-tile .stage.mini .hero {
-  padding: 8px;
-}
-
-.case-tile .stage.mini .icon-hero {
-  height: 64px;
-  margin-bottom: 4px;
-}
-
-.case-tile .stage.mini .action {
-  font-size: 18px;
-}
-
-.case-tile .stage.mini .action-sub {
-  font-size: 12px;
-}
-
-.case-tile .stage.mini .stale {
-  height: auto;
-  font-size: 12px;
-  padding: 4px 6px;
-}
-
-.case-tile .stage.mini .trade,
-.case-tile .stage.mini .footer,
-.case-tile .stage.mini .simbar {
-  display: none;
-}
-
-.mini-rail {
-  padding: 0 8px 8px;
-  justify-content: center;
-}
-
-.mini-rail img {
-  height: 28px;
-}
-
 .case-label {
   padding: 0 10px 10px;
   font-weight: 800;
   font-size: 14px;
+}
+
+.case-tile .stage {
+  height: auto;
+  aspect-ratio: 16 / 9;
+  pointer-events: none;
 }

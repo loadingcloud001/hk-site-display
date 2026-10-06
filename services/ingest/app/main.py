@@ -1,7 +1,7 @@
 import json
 import os
 import threading
-import time
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -9,15 +9,67 @@ import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.feeds import Feed, FeedSet
 from app.sim_cases import ALIASES, CASE_IDS, build_case, list_cases, list_official_icons
+from app.site import validate_site
 from app.snapshot import build_snapshot
 
 HKT = timezone(timedelta(hours=8))
 ROOT = Path(__file__).resolve().parents[3]
 HSWW_URL = "https://www.hko.gov.hk/wxinfo/hkhi/hkhi_icon.xml"
 WARN_URL = "https://data.weather.gov.hk/weatherAPI/opendata/weather.php"
+POLL_SEC = 15
+STALE_AFTER = int(os.environ.get("STALE_AFTER_SEC", "600"))
+ENABLE_SIM = os.environ.get("ENABLE_SIM", "true").lower() in ("1", "true", "yes")
+ENABLE_POLLER = os.environ.get("ENABLE_LIVE_POLLER", "true").lower() in ("1", "true", "yes")
 
-app = FastAPI()
+SITE = validate_site(json.loads((ROOT / "config/sites/demo-site.json").read_text(encoding="utf-8")))
+SCHEDULE = json.loads((ROOT / "config/rest_schedule.json").read_text(encoding="utf-8"))
+ICONS = json.loads((ROOT / "config/official_icons.json").read_text(encoding="utf-8"))
+
+
+def _get_json(client, url, params=None):
+    response = client.get(url, params=params)
+    response.raise_for_status()
+    return response.json()
+
+
+def _hko(data_type):
+    return lambda client: _get_json(client, WARN_URL, {"dataType": data_type, "lang": "tc"})
+
+
+def make_feeds():
+    return FeedSet(
+        [
+            Feed("hsww", lambda client: _get_json(client, HSWW_URL), 60),
+            Feed("warnsum", _hko("warnsum"), 60),
+            Feed("warningInfo", _hko("warningInfo"), 60),
+            Feed("rhrread", _hko("rhrread"), 600),
+            Feed("fnd", _hko("fnd"), 1800),
+        ],
+        lambda: httpx.Client(timeout=15.0),
+    )
+
+
+FEEDS = make_feeds()
+
+
+def _poll(stop):
+    while not stop.is_set():
+        FEEDS.refresh_due()
+        stop.wait(POLL_SEC)
+
+
+@asynccontextmanager
+async def lifespan(_app):
+    stop = threading.Event()
+    if ENABLE_POLLER:
+        threading.Thread(target=_poll, args=(stop,), daemon=True, name="live-poll").start()
+    yield
+    stop.set()
+
+
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,71 +77,39 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_lock = threading.Lock()
-_cache = {"at": None, "snap": None}
-TTL = int(os.environ.get("SNAPSHOT_TTL_SEC", "60"))
-STALE_AFTER = int(os.environ.get("STALE_AFTER_SEC", "600"))
-ENABLE_SIM = os.environ.get("ENABLE_SIM", "true").lower() in ("1", "true", "yes")
-ENABLE_POLLER = os.environ.get("ENABLE_LIVE_POLLER", "true").lower() in ("1", "true", "yes")
-
-SITE = json.loads((ROOT / "config/sites/demo-site.json").read_text(encoding="utf-8"))
-SCHEDULE = json.loads((ROOT / "config/rest_schedule.json").read_text(encoding="utf-8"))
-ICONS = json.loads((ROOT / "config/official_icons.json").read_text(encoding="utf-8"))
-
 
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
 
 
-def _fetch_live():
-    with httpx.Client(timeout=15.0) as client:
-        hsww = client.get(HSWW_URL).json()
-        warnsum = client.get(WARN_URL, params={"dataType": "warnsum", "lang": "tc"}).json()
-        winfo = client.get(WARN_URL, params={"dataType": "warningInfo", "lang": "tc"}).json()
-    snap = build_snapshot(hsww, warnsum, winfo, {}, SITE, SCHEDULE, ICONS)
-    snap["source"] = "live"
-    snap["stale"] = False
-    return snap
-
-
-def _age_sec(now):
-    at = _cache["at"]
-    if not at:
-        return None
-    return (now - at).total_seconds()
-
-
-def _serve(now):
-    snap = _cache["snap"]
-    if not snap:
-        return None
-    out = dict(snap)
-    age = _age_sec(now)
-    out["stale"] = bool(age is None or age >= STALE_AFTER)
-    return out
+def _stale(now):
+    ages = (FEEDS.age("hsww", now), FEEDS.age("warnsum", now))
+    return any(age is None or age >= STALE_AFTER for age in ages)
 
 
 @app.get("/api/v1/snapshot")
 def snapshot():
-    now = datetime.now(HKT)
-    with _lock:
-        cached = _cache["snap"]
-        age = _age_sec(now)
-        if cached and age is not None and age < TTL:
-            return _serve(now)
-    try:
-        snap = _fetch_live()
-        with _lock:
-            _cache["snap"] = snap
-            _cache["at"] = now
-        return snap
-    except Exception:
-        with _lock:
-            out = _serve(now)
-        if out:
-            return out
+    if not ENABLE_POLLER or FEEDS.never_fetched():
+        FEEDS.refresh_due()
+    if FEEDS.value("hsww") is None and FEEDS.value("warnsum") is None:
         raise HTTPException(status_code=503, detail="no-data")
+    now = datetime.now(HKT)
+    stale = _stale(now)
+    snap = build_snapshot(
+        FEEDS.value("hsww") or {},
+        FEEDS.value("warnsum") or {},
+        FEEDS.value("warningInfo") or {},
+        FEEDS.value("rhrread") or {},
+        SITE,
+        SCHEDULE,
+        ICONS,
+        fnd=FEEDS.value("fnd") or {},
+        now=now,
+        stale=stale,
+    )
+    snap["source"] = "live"
+    return snap
 
 
 @app.get("/api/v1/sim/cases")
@@ -110,22 +130,3 @@ def sim(body: dict):
     if key not in CASE_IDS:
         raise HTTPException(status_code=400, detail="unknown-fixture")
     return build_case(key)
-
-
-def _refresh_loop():
-    while True:
-        try:
-            snap = _fetch_live()
-            with _lock:
-                _cache["snap"] = snap
-                _cache["at"] = datetime.now(HKT)
-        except Exception:
-            pass
-        time.sleep(max(TTL, 15))
-
-
-@app.on_event("startup")
-def _start_poller():
-    if not ENABLE_POLLER:
-        return
-    threading.Thread(target=_refresh_loop, daemon=True, name="live-poll").start()

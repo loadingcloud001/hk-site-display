@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.sim_cases import CASE_IDS, build_case, list_cases
+from app.sim_cases import CASE_IDS, build_case, list_cases, list_official_icons
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "apps" / "kiosk" / "public"
@@ -35,6 +35,14 @@ REQUIRED = [
     "rain-black-amber",
     "pre8-amber",
     "stale",
+    "amber-new",
+    "hsww-cancel-new",
+    "tc8ne-new",
+    "rain-black-cancel",
+    "rain-amber-tc3",
+    "trades-indoor",
+    "weather-old",
+    "forecast-old",
 ]
 
 
@@ -45,12 +53,13 @@ def test_catalog_covers_all_signals():
         assert rid in ids
 
 
-def test_none_is_idle_without_white_weather_tile():
+def test_none_is_a_normal_day_with_weather():
     snap = build_case("none")
     assert snap["hsww"]["inForce"] is False
     assert snap["priority"]["band"] == "P4"
     assert snap["tone"] == "idle"
-    assert snap["hko"]["wxIconRel"] is None
+    assert snap["display"]["mode"] == "normal"
+    assert snap["hko"]["wxIconRel"] == "official/wxicon/pic51.png"
     assert snap["hko"]["icons"] == []
     assert snap["hko"]["headlineZh"] == ""
     assert snap["site"]["tradeZh"] == "紮鐵"
@@ -75,7 +84,7 @@ def test_black_rain_caption_not_typhoon():
 def test_pre8_has_short_caption():
     snap = build_case("pre8")
     assert snap["priority"]["band"] == "P1"
-    assert snap["display"]["action"] == "盡早返回有蓋處"
+    assert snap["display"]["action"] == "分批離開工作地點"
     assert "八號" in snap["display"]["actionSub"]
     codes = [s["code"] for s in snap["signals"]]
     assert "WTCPRE8" in codes
@@ -84,11 +93,11 @@ def test_pre8_has_short_caption():
 
 def test_winning_weather_action_sets_tone_not_leftover_hsww():
     pre8a = build_case("pre8-amber")
-    assert pre8a["display"]["action"] == "盡早返回有蓋處"
+    assert pre8a["display"]["action"] == "分批離開工作地點"
     assert pre8a["tone"] == "p1"
     stack = build_case("typhoon-stack")
-    assert stack["display"]["action"] == "留在室內"
-    assert stack["tone"] == "p0-tc"
+    assert stack["display"]["action"] == "停止戶外作業"
+    assert stack["tone"] == "p0-rain"
 
 
 def test_amber_plus_tc1_keeps_rest_and_both_signals():
@@ -109,15 +118,18 @@ def test_tc8_plus_amber_is_stop_with_hsww_still_listed():
 
 
 def test_official_display_actions():
-    assert build_case("tc8ne")["display"]["action"] == "留在室內"
+    assert build_case("tc8ne")["display"]["action"] == "分批離開工作地點"
     assert build_case("tc9")["display"]["action"] == "切勿外出"
-    assert build_case("rain-black")["display"]["action"] == "暫停戶外工作"
+    assert build_case("tc10")["display"]["action"] == "切勿離開有遮蔽的地方"
+    assert build_case("rain-black")["display"]["action"] == "停止戶外作業"
     assert "暫避" in build_case("rain-black")["display"]["actionSub"]
-    assert build_case("landslip")["display"]["action"] == "遠離斜坡"
+    assert build_case("rain-red")["display"]["action"] == "暫停戶外作業"
+    assert build_case("landslip")["display"]["action"] == "避免靠近陡峭的斜坡和護土牆"
+    assert build_case("tsunami")["display"]["action"] == "遠離岸邊"
     assert build_case("amber")["display"]["action"] == "休息 45 分鐘"
     assert build_case("red")["display"]["action"] == "暫停工作"
     assert build_case("none")["display"]["action"] == "正常工作"
-    assert build_case("pre8")["display"]["action"] == "盡早返回有蓋處"
+    assert build_case("pre8")["display"]["action"] == "分批離開工作地點"
     for name in ("tc1", "tc3", "rain-amber", "thunderstorm", "vhot"):
         snap = build_case(name)
         assert snap["signals"], name
@@ -194,3 +206,47 @@ def test_display_covers_every_sim_case():
         if not highs and not (snap.get("display") or {}).get("heroRel"):
             missing.append(f"{case['id']}:no-hero")
     assert missing == []
+
+
+def test_gallery_weather_icons_use_official_names():
+    by = {i["code"]: i["labelZh"] for i in list_official_icons() if i["kind"] == "wx"}
+    assert len(by) == 29
+    assert by["pic50"] == "陽光充沛"
+    assert by["pic62"] == "微雨"
+    assert by["pic90"] == "熱"
+
+
+def test_banner_cases():
+    amber_new = build_case("amber-new")["banner"]
+    assert (amber_new["time"], amber_new["textZh"]) == ("14:42", "黃色工作暑熱警告 生效")
+    assert build_case("hsww-cancel-new")["banner"]["textZh"] == "工作暑熱警告 取消"
+    assert build_case("tc8ne-new")["banner"]["textZh"] == "八號東北烈風或暴風信號 發出"
+    assert build_case("rain-black-cancel")["banner"]["textZh"] == "黑色暴雨警告信號 取消"
+    assert build_case("amber")["banner"] is None
+    assert build_case("stale")["banner"] is None
+
+
+def test_weather_freshness_cases():
+    none = build_case("none")
+    assert none["weather"]["placeZh"] == "觀塘"
+    assert none["forecast"]["date"] == "20260716"
+    assert build_case("weather-old")["weather"] is None
+    assert build_case("forecast-old")["forecast"] is None
+
+
+def test_indoor_and_aircon_trades():
+    tiles = build_case("trades-indoor")["restTiles"]
+    assert [(t["kind"], t["rest"], t["tradesZh"]) for t in tiles] == [
+        ("rest", 45, "紮鐵"),
+        ("rest", 30, "焊接"),
+        ("baseline", 10, "室內裝修 · 電工"),
+    ]
+
+
+def test_two_supervisor_lines():
+    lines = build_case("rain-amber-tc3")["supervisor"]
+    assert [line["text"] for line in lines] == ["停止操作起重機、吊船", "停止操作吊船、進行斜坡工程"]
+
+
+def test_pre8_shows_the_signal_in_force():
+    assert build_case("pre8-amber")["display"]["heroRel"] == "official/warning/tc3.png"

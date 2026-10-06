@@ -1,3 +1,6 @@
+# Official name, HKO Open Data API documentation (TC), warningStatementCode WTCPRE8.
+PRE8_NAME = "預警八號熱帶氣旋警告信號之特別報告"
+
 ACTIVE = {"ISSUE", "REISSUE", "EXTEND", "UPDATE"}
 
 
@@ -50,6 +53,28 @@ def parse_warning_info(raw: dict) -> list[dict]:
                 "subtype": d.get("subtype"),
                 "contents": [str(c) for c in contents],
                 "updateTime": d.get("updateTime"),
+            }
+        )
+    return out
+
+
+def parse_warnsum_events(raw: dict) -> list[dict]:
+    """Every warnsum entry with its action and times, cancellations included (for the change banner)."""
+    out = []
+    if not isinstance(raw, dict):
+        return out
+    for key, item in raw.items():
+        if not isinstance(item, dict):
+            continue
+        out.append(
+            {
+                "key": key,
+                "code": item.get("code") or key,
+                "name": (item.get("name") or "").strip(),
+                "type": (item.get("type") or "").strip(),
+                "actionCode": item.get("actionCode") or "",
+                "issueTime": item.get("issueTime"),
+                "updateTime": item.get("updateTime"),
             }
         )
     return out

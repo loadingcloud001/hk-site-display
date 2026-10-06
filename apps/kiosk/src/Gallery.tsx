@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { present, type Snapshot } from "./present";
+import type { Snapshot } from "./present";
+import { Screen } from "./Screen";
 import "./gallery.css";
 
 type Icon = { code: string; labelZh: string; rel: string; kind: string };
@@ -37,18 +38,10 @@ export function Gallery() {
     window.location.href = "/?preview=1&fixture=" + encodeURIComponent(id);
   }
 
-  if (err) {
+  if (err || !cases.length) {
     return (
       <div className="gallery">
-        <p className="gallery-err">{err}</p>
-      </div>
-    );
-  }
-
-  if (!cases.length) {
-    return (
-      <div className="gallery">
-        <p className="gallery-err">載入中…</p>
+        <p className="gallery-err">{err || "載入中…"}</p>
       </div>
     );
   }
@@ -86,45 +79,12 @@ export function Gallery() {
           <section key={g.id}>
             <h3>{g.label}</h3>
             <div className="case-grid">
-              {rows.map((c) => {
-                const view = present(c.snapshot);
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    className="case-tile"
-                    onClick={() => openCase(c.id)}
-                  >
-                    <div
-                      className="stage mini"
-                      data-tone={view.tone}
-                      data-heat={view.heat}
-                      data-band={view.band}
-                      data-signal={view.signal}
-                    >
-                      {view.stale && <div className="stale">資料過期</div>}
-                      <div className="hero">
-                        {view.heroIcon && (
-                          <img className="icon-hero" src={"/" + view.heroIcon} alt="" />
-                        )}
-                        <p className="action">{view.action}</p>
-                        <p className="action-sub">{view.actionSub}</p>
-                      </div>
-                      {view.rail.length > 0 && (
-                        <div className="rail mini-rail">
-                          {view.rail.map(
-                            (s) =>
-                              s.rel && (
-                                <img key={s.code} src={"/" + s.rel} alt={s.labelZh} />
-                              ),
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <span className="case-label">{c.labelZh}</span>
-                  </button>
-                );
-              })}
+              {rows.map((c) => (
+                <button key={c.id} type="button" className="case-tile" onClick={() => openCase(c.id)}>
+                  <Screen snap={c.snapshot} clock={c.snapshot.clock || ""} date="" />
+                  <span className="case-label">{c.labelZh}</span>
+                </button>
+              ))}
             </div>
           </section>
         );

@@ -5,7 +5,6 @@ services:
       dockerfile: services/ingest/Dockerfile
     restart: unless-stopped
     environment:
-      SNAPSHOT_TTL_SEC: "60"
       STALE_AFTER_SEC: "600"
       ENABLE_SIM: "true"
       ENABLE_LIVE_POLLER: "true"

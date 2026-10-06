@@ -1,24 +1,150 @@
 {
-  "weather": {
-    "TC8NE": { "action": "留在室內" },
-    "TC8SE": { "action": "留在室內" },
-    "TC8NW": { "action": "留在室內" },
-    "TC8SW": { "action": "留在室內" },
-    "TC8": { "action": "留在室內" },
-    "TC9": { "action": "切勿外出" },
-    "TC10": { "action": "切勿離開有蓋處" },
-    "WRAINB": { "action": "暫停戶外工作", "sub": "到安全地方暫避" },
-    "WRAINR": { "action": "暫停戶外工作", "sub": "到安全地方暫避" },
-    "WL": { "action": "遠離斜坡" },
-    "WTCPRE8": { "action": "盡早返回有蓋處", "sub": "預警將改發八號風球" },
-    "WTMW": { "action": "遠離岸邊" }
-  },
   "sources": {
-    "hsww": "勞工處《預防工作時中暑指引》第三版（2026-08）附錄四",
-    "t8": "天文台《熱帶氣旋警告信號生效時應注意的事項》：八號盡早回家、避免逗留街上",
-    "t9": "天文台：切勿外出；已在遮蔽處應留在原處",
-    "t10": "天文台：切勿離開有遮蔽的地方",
-    "rain": "勞工處《惡劣天氣及「極端情況」下的工作安排守則》：紅／黑暴雨戶外應暫停並暫避",
-    "landslip": "天文台山泥傾瀉警告：遠離斜坡"
+    "ld-gn-heat": {
+      "titleZh": "勞工處《預防工作時中暑指引》",
+      "edition": "第三版（修訂）2026年8月",
+      "url": "https://www.labour.gov.hk/common/public/oh/Heat_Stress_GN_tc.pdf",
+      "checked": "2026-10-06"
+    },
+    "ld-cop-weather": {
+      "titleZh": "勞工處《惡劣天氣及「極端情況」下的工作守則》",
+      "edition": "2026年5月（中文版2026年6月）",
+      "url": "https://www.labour.gov.hk/tc/public/pdf/wcp/Rainstorm.pdf",
+      "checked": "2026-10-06"
+    },
+    "hko-tc": {
+      "titleZh": "天文台《熱帶氣旋警告信號生效時應注意的事項》",
+      "edition": "網頁",
+      "url": "https://www.hko.gov.hk/tc/informtc/precaution.htm",
+      "checked": "2026-10-06"
+    },
+    "hko-rain": {
+      "titleZh": "天文台《暴雨警告系統》",
+      "edition": "網頁",
+      "url": "https://www.hko.gov.hk/tc/wservice/warning/rainstor.htm",
+      "checked": "2026-10-06"
+    },
+    "hko-landslip": {
+      "titleZh": "天文台《山泥傾瀉警告》",
+      "edition": "網頁",
+      "url": "https://www.hko.gov.hk/tc/wservice/warning/landslip.htm",
+      "checked": "2026-10-06"
+    },
+    "hko-tsunami": {
+      "titleZh": "天文台《香港海嘯的監測及警告》",
+      "edition": "網頁",
+      "url": "https://www.hko.gov.hk/tc/gts/equake/tsunami_mon.htm",
+      "checked": "2026-10-06"
+    }
+  },
+  "weather": {
+    "tc10": {
+      "codes": ["TC10"],
+      "main": "切勿離開有遮蔽的地方",
+      "sub": ["同時留意風向轉變"],
+      "quotes": [
+        {"source": "hko-tc", "text": "倘若風眼直接掠過本港，風勢會停息數分鐘至數小時不等，但具有破壞性的風力隨時會突然恢復並從另一個方向吹來。切勿離開有遮蔽的地方，同時留意風向轉變。"}
+      ]
+    },
+    "tc9": {
+      "codes": ["TC9"],
+      "main": "切勿外出",
+      "sub": ["如果已經在有遮蔽的地方躲避，就應該繼續留在原處"],
+      "quotes": [
+        {"source": "hko-tc", "text": "切勿外出。如果已經在有遮蔽的地方躲避，就應該繼續留在原處。切勿接觸被風吹倒的電線。"}
+      ]
+    },
+    "rain-black": {
+      "codes": ["WRAINB"],
+      "main": "停止戶外作業",
+      "sub": ["並到安全地方暫避"],
+      "quotes": [
+        {"source": "hko-rain", "text": "在空曠地方工作的人士應停止戶外作業，並到安全地方暫避。"}
+      ]
+    },
+    "tc8": {
+      "codes": ["TC8NE", "TC8SE", "TC8NW", "TC8SW"],
+      "main": "分批離開工作地點",
+      "sub": ["如情況許可，市民應盡早回家"],
+      "quotes": [
+        {"source": "ld-cop-weather", "text": "當八號預警（在預計發出八號信號前兩小時內發出）或八號信號發出，按預先協定分批離開工作地點或下班。"},
+        {"source": "hko-tc", "text": "如情況許可，市民應盡早回家，避免逗留在街上。"}
+      ]
+    },
+    "landslip": {
+      "codes": ["WL"],
+      "main": "避免靠近陡峭的斜坡和護土牆",
+      "sub": ["停止操作起重機、吊船、進行斜坡工程"],
+      "quotes": [
+        {"source": "hko-landslip", "text": "當山泥傾瀉警告生效時，市民應取消不必要的約會，留在家中或其他安全地方。行人應避免靠近陡峭的斜坡和護土牆。"},
+        {"source": "ld-cop-weather", "text": "在發出強烈季候風信號及山泥傾瀉警告時，應停止操作起重機、吊船、進行斜坡工程等工作。"}
+      ]
+    },
+    "tsunami": {
+      "codes": ["WTMW"],
+      "main": "遠離岸邊",
+      "sub": ["前往內陸地方或地勢較高的地面"],
+      "quotes": [
+        {"source": "hko-tsunami", "text": "遠離岸邊、海灘及沿岸低窪地區。如身處這些地點，應前往內陸地方或地勢較高的地面。"}
+      ]
+    },
+    "pre8": {
+      "codes": ["WTCPRE8"],
+      "main": "分批離開工作地點",
+      "sub": [],
+      "quotes": [
+        {"source": "ld-cop-weather", "text": "當八號預警（在預計發出八號信號前兩小時內發出）或八號信號發出，按預先協定分批離開工作地點或下班。"}
+      ]
+    },
+    "rain-red": {
+      "codes": ["WRAINR"],
+      "main": "暫停戶外作業",
+      "sub": ["直至天氣情況許可為止"],
+      "quotes": [
+        {"source": "hko-rain", "text": "在空曠地方工作的人士應暫停戶外作業，直至天氣情況許可為止。"}
+      ]
+    }
+  },
+  "supervisor": {
+    "thunderstorm": {
+      "rank": 1,
+      "codes": ["WTS"],
+      "fragments": ["有僱員可能遭受雷電擊中時", "立即停止工作，並到安全地方暫避"],
+      "quotes": [
+        {"source": "ld-cop-weather", "text": "在雷暴警告生效期間及有僱員可能遭受雷電擊中時，主管應在切實可行範圍內盡量安排僱員立即停止工作，並到安全地方暫避。"}
+      ]
+    },
+    "monsoon": {
+      "rank": 2,
+      "codes": ["WMSGNL"],
+      "fragments": ["停止操作起重機、吊船、進行斜坡工程"],
+      "quotes": [
+        {"source": "ld-cop-weather", "text": "在發出強烈季候風信號及山泥傾瀉警告時，應停止操作起重機、吊船、進行斜坡工程等工作。"}
+      ]
+    },
+    "tc1-tc3": {
+      "rank": 3,
+      "codes": ["TC1", "TC3"],
+      "fragments": ["停止操作起重機、吊船"],
+      "quotes": [
+        {"source": "ld-cop-weather", "text": "在一號或三號信號期間︰停止操作起重機、吊船等。"}
+      ]
+    },
+    "rain-amber": {
+      "rank": 4,
+      "codes": ["WRAINA"],
+      "fragments": ["停止操作吊船、進行斜坡工程"],
+      "quotes": [
+        {"source": "ld-cop-weather", "text": "在黃色或紅色暴雨警告期間︰停止操作吊船、進行斜坡工程等工作。"}
+      ]
+    }
+  },
+  "notes": {
+    "heatUnacclimatised": {
+      "fragments": ["僱員未適應或需重新適應在酷熱環境中工作", "每小時的休息時間應增加15分鐘"],
+      "quotes": [
+        {"source": "ld-gn-heat", "text": "若僱員未適應或需重新適應在酷熱環境中工作，例如以往未曾或超過兩星期不曾在酷熱的環境中工作，僱主除了須跟從第4.6章有關熱適應期的安排外，當工作暑熱警告生效時，有關僱員每小時的休息時間應增加15分鐘。"}
+      ]
+    }
   }
 }
