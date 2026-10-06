@@ -311,13 +311,10 @@ HSWW_ICONS = [
     {"code": "LD", "labelZh": "勞工處", "rel": "official/ld_logo.png", "kind": "hsww"},
 ]
 
+WX_NAMES = json.loads((ROOT / "config/wx_icons.json").read_text(encoding="utf-8"))["icons"]
 WX_ICONS = [
-    {"code": "pic50", "labelZh": "天晴", "rel": "official/wxicon/pic50.png", "kind": "wx"},
-    {"code": "pic60", "labelZh": "多雲", "rel": "official/wxicon/pic60.png", "kind": "wx"},
-    {"code": "pic62", "labelZh": "間有驟雨", "rel": "official/wxicon/pic62.png", "kind": "wx"},
-    {"code": "pic65", "labelZh": "雷暴", "rel": "official/wxicon/pic65.png", "kind": "wx"},
-    {"code": "pic80", "labelZh": "大風", "rel": "official/wxicon/pic80.png", "kind": "wx"},
-    {"code": "pic90", "labelZh": "炎熱", "rel": "official/wxicon/pic90.png", "kind": "wx"},
+    {"code": f"pic{code}", "labelZh": name, "rel": f"official/wxicon/pic{code}.png", "kind": "wx"}
+    for code, name in WX_NAMES.items()
 ]
 
 WARN_LABELS = {

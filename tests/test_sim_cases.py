@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.sim_cases import CASE_IDS, build_case, list_cases
+from app.sim_cases import CASE_IDS, build_case, list_cases, list_official_icons
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "apps" / "kiosk" / "public"
@@ -197,3 +197,11 @@ def test_display_covers_every_sim_case():
         if not highs and not (snap.get("display") or {}).get("heroRel"):
             missing.append(f"{case['id']}:no-hero")
     assert missing == []
+
+
+def test_gallery_weather_icons_use_official_names():
+    by = {i["code"]: i["labelZh"] for i in list_official_icons() if i["kind"] == "wx"}
+    assert len(by) == 29
+    assert by["pic50"] == "陽光充沛"
+    assert by["pic62"] == "微雨"
+    assert by["pic90"] == "熱"
