@@ -2,7 +2,7 @@
 
 Hong Kong construction **site notice**: live Labour Department Heat Stress at Work Warning (HSWW) and HKO weather warnings on one screen at the gate.
 
-Official HKO / Labour Department icons and wording only. Every state uses one centred layout, in landscape or portrait: a large official icon, the instruction, and a bottom bar with every warning in force, district weather, tomorrow's forecast and the clock. On heat-stress days the instruction becomes one tile per rest time, labelled with the site's trades. Not a 4S system. Not a sensor product.
+Official HKO / Labour Department icons and wording only. Every state uses one centred layout, in landscape or portrait: a large official icon, the instruction, and a bottom bar with every warning in force, the temperature at the nearest HKO station, tomorrow's forecast and the clock. On heat-stress days the instruction becomes one tile per rest time, labelled with the site's trades. Not a 4S system. Not a sensor product.
 
 ## Live demo
 
@@ -57,13 +57,27 @@ Each feed is cached separately, and a failing feed keeps its last value.
 
 Icons: `apps/kiosk/public/official/` (see its README). Refresh them with `python3 scripts/fetch_official_icons.py`.
 
+## Weather station and location
+
+The temperature on the bottom bar comes from an HKO station, and the station's name is shown under it.
+
+- The page asks the browser for the screen's location. If it is allowed, the screen shows the nearest HKO station that is reporting a temperature.
+- With no location (refused, unavailable, too coarse to be useful, outside Hong Kong, or the page is plain `http://`, since browsers only allow location on `https://` and `localhost`), it shows 香港天文台, the general HKO reading. A site can name another fallback with `weatherStation`.
+- The screen never waits for the browser's answer, and the location never affects warnings, rest times or wording.
+- Humidity is shown only with 香港天文台, because that is the only station HKO reports it for.
+- `?loc=0` on the URL stops the page asking, for a screen where nobody can answer the browser's prompt. Allow the location once when setting a screen up and the browser remembers it.
+
+What is sent: the position rounded to about 1 km (`/api/v1/snapshot?lat=22.32&lon=114.22&acc=100`), only to choose the station. The service does not store it, and the access log shows `lat=-&lon=-&acc=-`. The screen keeps its last position in the browser's local storage so a reload shows the right station straight away.
+
+Stations and coordinates are HKO's own (https://www.hko.gov.hk/en/cis/stn.htm). Refresh them with `python3 scripts/fetch_hko_stations.py` (`--check` only reports drift).
+
 ## Site config
 
 `config/sites/demo-site.json`. Copy it, and do not commit real site names.
 
 | Field | Meaning |
 |---|---|
-| `district`, `weatherStation` | HKO temperature station shown on screen (defaults to `district`, then 香港天文台) |
+| `weatherStation` | HKO station shown when the screen has no location (default 香港天文台); must be a name in `config/hko_stations.json` |
 | `environment` | `outdoor`, `indoor` (no air-conditioning) or `aircon`; the default for every trade |
 | `restAdjustMinutes` | Employer's adjustment under LD guidance §5.3–5.5: a multiple of 15, from −30 to +60 |
 | `defaultWorkload` | `light`, `moderate`, `heavy` or `very_heavy` |
@@ -81,7 +95,7 @@ cd apps/kiosk && npm install && npm run dev
 
 On Windows, use `.venv/Scripts/python.exe` in place of `.venv/bin/python`.
 
-- http://localhost:5173/ — live fullscreen
+- http://localhost:5173/ — live fullscreen (the browser asks for the location; add `?loc=0` to skip it)
 - http://localhost:5173/?preview=1 — fixture preview (add `&bar=0` to hide the buttons)
 - http://localhost:5173/?gallery=1 — every official icon and signal case
 

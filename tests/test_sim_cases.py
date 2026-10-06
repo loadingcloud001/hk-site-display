@@ -228,7 +228,7 @@ def test_banner_cases():
 
 def test_weather_freshness_cases():
     none = build_case("none")
-    assert none["weather"]["placeZh"] == "觀塘"
+    assert none["weather"]["placeZh"] == "香港天文台"
     assert none["forecast"]["date"] == "20260716"
     assert build_case("weather-old")["weather"] is None
     assert build_case("forecast-old")["forecast"] is None

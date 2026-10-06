@@ -2,8 +2,6 @@
   "siteId": "demo-kai-tak",
   "nameZh": "示範地盤",
   "nameEn": "Demo Site",
-  "district": "觀塘",
-  "weatherStation": "觀塘",
   "defaultWorkload": "very_heavy",
   "environment": "outdoor",
   "restAdjustMinutes": 0,
