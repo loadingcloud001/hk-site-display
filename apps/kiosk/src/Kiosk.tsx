@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { fixQuery, useFix } from "./locate";
 import { clockNow, dateZh, type Snapshot } from "./present";
 import { Screen } from "./Screen";
 
@@ -9,6 +10,8 @@ const LIVE = !PREVIEW || flag("live", "kiosk");
 const FIXTURE = params.get("fixture");
 // ?bar=0 hides the preview buttons, for screenshots and showing a case on a real screen.
 const SHOW_BAR = params.get("bar") !== "0";
+// ?loc=0 never asks for this screen's location; the weather then shows the site's station or 香港天文台.
+const LOCATE = LIVE && params.get("loc") !== "0";
 const POLL_MS = 30_000;
 
 type CaseBtn = { id: string; labelZh: string };
@@ -22,8 +25,8 @@ const FALLBACK_CASES: CaseBtn[] = [
   { id: "rain-black", labelZh: "黑色暴雨" },
 ];
 
-async function loadSnap(): Promise<Snapshot> {
-  const r = await fetch("/api/v1/snapshot");
+async function loadSnap(query: string): Promise<Snapshot> {
+  const r = await fetch(`/api/v1/snapshot${query}`);
   if (!r.ok) throw new Error("snapshot");
   return r.json();
 }
@@ -40,6 +43,7 @@ export function Kiosk() {
   const [date, setDate] = useState(dateZh);
   const [holdSim, setHoldSim] = useState(false);
   const [layout, setLayout] = useState(readLayout);
+  const query = fixQuery(useFix(LOCATE));
   // Once a preview case is requested, a late live response must never overwrite it.
   const holdSimRef = useRef(Boolean(PREVIEW && !LIVE && FIXTURE));
 
@@ -71,7 +75,7 @@ export function Kiosk() {
     let alive = true;
     const tick = async () => {
       try {
-        const s = await loadSnap();
+        const s = await loadSnap(query);
         if (alive && !holdSimRef.current) {
           setSnap(s);
           setErr(null);
@@ -86,7 +90,7 @@ export function Kiosk() {
       alive = false;
       clearInterval(id);
     };
-  }, [holdSim]);
+  }, [holdSim, query]);
 
   useEffect(() => {
     if (!PREVIEW || LIVE) return;
