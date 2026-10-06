@@ -249,6 +249,10 @@ html.gallery-page #root {
   border-bottom: 0.3cqh solid color-mix(in srgb, var(--fg) 35%, transparent);
 }
 
+.tile .trades .tn {
+  white-space: nowrap;
+}
+
 .tile .big {
   font-size: 4.6cqh;
   font-weight: 900;
@@ -521,6 +525,12 @@ html.gallery-page #root {
 
   .tile {
     padding: 1.2cqh 2cqw;
+  }
+
+  .tile:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc((100% - 2.6cqw) / 2);
   }
 
   .tile .trades {

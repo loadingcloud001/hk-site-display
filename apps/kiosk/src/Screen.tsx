@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import { Fragment, type CSSProperties, type ReactNode } from "react";
 import { formatUv, isStale, railSignals, type RestTile, type Snapshot } from "./present";
 
 const STALE_TEXT = "資料過期 — 請以我的天文台為準";
@@ -11,11 +11,26 @@ function Plate({ rel, className }: { rel: string; className?: string }) {
   );
 }
 
+// A wrapped tile label breaks between trade names, never inside one, and "+N" stays with the name before it.
+function Trades({ label }: { label: string }) {
+  const names = label.split(" · ");
+  return (
+    <div className="trades">
+      {names.map((name, i) => (
+        <Fragment key={`${i}-${name}`}>
+          {i > 0 && " "}
+          <span className="tn">{i < names.length - 1 ? `${name}\u00A0·` : name}</span>
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
 function Tile({ tile }: { tile: RestTile }) {
   if (tile.kind === "suspend") {
     return (
       <div className="tile stop">
-        <div className="trades">{tile.tradesZh}</div>
+        <Trades label={tile.tradesZh} />
         <div className="big big-word">暫停工作</div>
         <div className="small" />
       </div>
@@ -23,7 +38,7 @@ function Tile({ tile }: { tile: RestTile }) {
   }
   return (
     <div className="tile">
-      <div className="trades">{tile.tradesZh}</div>
+      <Trades label={tile.tradesZh} />
       <div className="big">
         休息<b>{tile.rest}</b>分鐘
       </div>
@@ -135,7 +150,7 @@ export function Screen({ snap, clock, date, layout, simbar }: ScreenProps) {
           )}
           {forecast && (
             <>
-              <div className="sep" />
+              {weather && <div className="sep" />}
               <div className="wx tmr">
                 {forecast.iconRel && <Plate rel={forecast.iconRel} />}
                 <div className="range">
