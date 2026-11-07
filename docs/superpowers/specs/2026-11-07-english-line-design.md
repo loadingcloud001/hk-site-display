@@ -153,12 +153,13 @@ HKO's `warnsum` puts only the colour in `type` for rainstorm and fire danger war
 | Weather instructions (Signals 8–10, black and red rain, tsunami, Pre-No. 8, landslip) | 98–100 % (100 %) | 100 % (100 %) |
 | Normal day, with or without other warnings on the bar | 95 % (100 %) | 91–100 % (100 %) |
 | Heat stress, Amber / Red / Black | 96–100 % (100 %) | 76–78 % (96–100 %) |
-| Normal day with one supervisor line (Signal 1 or 3, Strong Monsoon, amber rain, thunderstorm) | 83–86 % (100 %) | 75–89 % (94–100 %) |
+| Normal day with one supervisor line (Signal 1 or 3, Strong Monsoon, amber rain, thunderstorm, and Signal 1 just after 「極端情況」 ends) | 83–86 % (100 %) | 75–89 % (94–100 %) |
 | Amber heat stress with Signal 1 or 3 | 85 % (100 %) | 66 % (94 %) |
 | Amber rain with Signal 3 (two supervisor lines) | 78 % (98 %) | 71 % (94 %) |
 | Amber heat stress with a thunderstorm | 82 % (100 %) | 64 %, the warning's and the note's English given up (81 %) |
+| 「極端情況」, alone or with warnings on the bar | 89 % (100 %) | 95–100 % (100 %) |
 
-Nothing runs into the bar or under the banner in any case, in either orientation. The busiest days are portrait heat-stress days with a supervisor line, which the Chinese-only screen already shrinks. A busy test site with five or six tile groups and long English names shows everything at 60–67 % in landscape. In portrait it gives up the warning's and the note's English on heat-stress days (63 %), and all of the English when a supervisor line is added too (67–75 %). Nothing overlaps there either.
+Nothing runs into the bar or under the banner in any case, in either orientation. After merging master (supervisor alerts, 「極端情況」, the sky-blue weather tiles), all 48 cases were measured again: the 44 earlier ones gave the same scales, to the percent. The busiest days are portrait heat-stress days with a supervisor line, which the Chinese-only screen already shrinks. A busy test site with five or six tile groups and long English names shows everything at 60–67 % in landscape. In portrait it gives up the warning's and the note's English on heat-stress days (63 %), and all of the English when a supervisor line is added too (67–75 %). Nothing overlaps there either.
 
 ## 8. Rules for the future
 
