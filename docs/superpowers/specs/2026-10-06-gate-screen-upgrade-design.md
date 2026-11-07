@@ -455,6 +455,7 @@ Run this each April, before the hot season, and whenever LD or HKO announce revi
 2. Re-read the HKO advice pages in §3 and update the quotes. The wording-guard test then forces matching screen text.
 3. Update `sources[*].checked` dates.
 4. Run `python3 scripts/fetch_hko_stations.py --check`. It compares `config/hko_stations.json` with HKO's station page and reports any station in the live weather report that has no coordinates yet.
+5. Do steps 1–3 for the English versions too (English line spec, `2026-11-07-english-line-design.md` §3): the two English LD PDFs, including their Appendix 4 and 4(a) against `rest_schedule.json`, and HKO's English advice pages. When Appendix 1 changes, check the English trade names (`labelEn`) in the site files.
 
 ## 10. Known gaps (later sub-projects)
 

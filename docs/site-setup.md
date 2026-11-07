@@ -33,6 +33,8 @@ nano config/sites/s7k2.json
 - **`environment`**: `outdoor`, `indoor` (no air-conditioning) or `aircon`. Set it on a trade when that trade differs from the rest of the site.
 - **`restAdjustMinutes`**: leave it at `0`, unless the employer's heat stress risk assessment sets an adjustment (Labour Department guidance §5.3–5.5).
 - **`weatherStation`** and **`windStation`**: what the bar shows when the screen has no location. Pick the nearest HKO stations from `config/hko_stations.json`: `stations` for the temperature, `windStations` for the wind. Do not pick 昂坪 or 大老山 for the wind unless the site is on a hill: they measure hill-top winds.
+- **`languages`**: leave it out for Chinese only. `["zh", "en"]` adds an English line under the Chinese for workers who read English. It uses only the English versions that the Labour Department and HKO publish of the same instructions, so a line with no official English stays Chinese only. Chinese is always shown.
+- **`labelEn`**, on each trade of a site with English: the trade's English name, shown under the Chinese name on the heat-stress tiles. Use the name in the English Appendix 1 of the Labour Department guidance where the trade is listed there (the demo site's names come from it). A tile shows English names only when every trade on it has one.
 
 Restart the service, wait 10 seconds, and check:
 
@@ -47,6 +49,8 @@ Then see what your site's screen will show on hot days, before the hot season:
 
 - `https://YOUR-DOMAIN/?preview=1&site=s7k2&fixture=amber`
 - the same with `fixture=red` and `fixture=black`
+
+With English, look at these in the screen's own orientation too: portrait tiles are narrow, and a long English trade name takes two lines.
 
 ## 3. Set up the player
 
@@ -99,7 +103,7 @@ Chrome is not available for Android TV, so use a kiosk browser app, for example 
 
 1. The clock on the bar shows the right time. The screen shows the server's time, so a wrong time means the server's clock is wrong, not the player's.
 2. The bar shows a station name under the temperature and the wind: the nearest one if the location was allowed, otherwise the site's own.
-3. With the preview addresses from step 2, the tiles show the site's trade names, not 輕勞動 / 中等勞動 / 重勞動 / 極重勞動.
+3. With the preview addresses from step 2, the tiles show the site's trade names, not 輕勞動 / 中等勞動 / 重勞動 / 極重勞動. On a site with English, each tile shows the English names under the Chinese ones.
 4. Switch everything off at the socket, then on. Within a few minutes the notice is back with nobody touching it.
 5. Unplug the internet. After 10 minutes the screen shows 資料過期 — 請以我的天文台為準. Plug it back: the message clears by itself within a minute.
 
