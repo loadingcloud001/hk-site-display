@@ -2,7 +2,7 @@
 
 Hong Kong construction **site notice**: live Labour Department Heat Stress at Work Warning (HSWW) and HKO weather warnings on one screen at the gate.
 
-Official HKO / Labour Department icons and wording only. Every state uses one centred layout, in landscape or portrait: a large official icon, the instruction, and a bottom bar with every warning in force, the temperature and the wind at the nearest HKO stations, tomorrow's forecast with its chance of significant rain, and the clock. On heat-stress days the instruction becomes one tile per rest time, labelled with the site's trades. One server runs many sites, and each screen runs unattended. When the Government announces 「極端情況」, the operator switches every screen to it. Not a 4S system. Not a sensor product.
+Official HKO / Labour Department icons and wording only. Every state uses one centred layout, in landscape or portrait: a large official icon, the instruction, and a bottom bar with every warning in force, the temperature and the wind at the nearest HKO stations, tomorrow's forecast with its chance of significant rain, and the clock. On heat-stress days the instruction becomes one tile per rest time, labelled with the site's trades. One server runs many sites, and each screen runs unattended. When a site's screen changes, its supervisors can get a short email. When the Government announces 「極端情況」, the operator switches every screen to it. Not a 4S system. Not a sensor product.
 
 ## Live demo
 
@@ -22,7 +22,7 @@ Same URL, portrait:
 
 ![Normal day, 9:16](docs/demo/live-9x16.png)
 
-Design and decisions: `docs/superpowers/specs/` ([gate screen](docs/superpowers/specs/2026-10-06-gate-screen-upgrade-design.md), [weather station by location](docs/superpowers/specs/2026-10-06-weather-station-by-location-design.md), [site-ready upgrade](docs/superpowers/specs/2026-11-07-site-ready-upgrade-design.md), [「極端情況」](docs/superpowers/specs/2026-11-07-extreme-conditions-design.md)). Installing a screen, and switching 「極端情況」: [docs/site-setup.md](docs/site-setup.md).
+Design and decisions: `docs/superpowers/specs/` ([gate screen](docs/superpowers/specs/2026-10-06-gate-screen-upgrade-design.md), [weather station by location](docs/superpowers/specs/2026-10-06-weather-station-by-location-design.md), [site-ready upgrade](docs/superpowers/specs/2026-11-07-site-ready-upgrade-design.md), [supervisor alerts](docs/superpowers/specs/2026-11-07-supervisor-alerts-design.md), [「極端情況」](docs/superpowers/specs/2026-11-07-extreme-conditions-design.md)). Installing a screen, supervisor alerts and the 「極端情況」 switch: [docs/site-setup.md](docs/site-setup.md).
 
 ## Rules the notice will not break
 
@@ -101,6 +101,7 @@ Stations and coordinates are HKO's own (https://www.hko.gov.hk/en/cis/stn.htm). 
 | `restAdjustMinutes` | Employer's adjustment under LD guidance §5.3–5.5: a multiple of 15, from −30 to +60 |
 | `defaultWorkload` | `light`, `moderate`, `heavy` or `very_heavy` |
 | `primaryTrades[]` | `labelZh`, `workload`, and optional per-trade `environment` and `adjustMinutes` |
+| `alerts.email` | Supervisors who get an email when the screen changes (*Supervisor alerts* below). A mistake here is reported in `siteProblems` and never changes the screen |
 
 **Several sites.**
 
@@ -128,7 +129,7 @@ The switch is `/api/v1/admin/extreme`, with `Authorization: Bearer <ADMIN_KEY>`,
 | `DELETE` | Switches off now |
 | `GET` | Shows the state, and tests the key |
 
-It ends by itself at the announced end, survives restarts (the `state` volume) and applies to every site. Without `ADMIN_KEY` it is off. Who may switch it, and the commands: [docs/site-setup.md](docs/site-setup.md) §8. Design and ranking: [spec](docs/superpowers/specs/2026-11-07-extreme-conditions-design.md).
+It ends by itself at the announced end, survives restarts (its own `extreme-state` volume) and applies to every site. Without `ADMIN_KEY` it is off. Supervisor alerts sent while it is in force repeat its lines as the screen shows them; switching it on or off sends none. Who may switch it, and the commands: [docs/site-setup.md](docs/site-setup.md) §9. Design and ranking: [spec](docs/superpowers/specs/2026-11-07-extreme-conditions-design.md).
 
 ## Running unattended
 
@@ -141,9 +142,35 @@ Each screen looks after itself:
 - It reloads itself within 5 minutes of a new deploy, but never while offline.
 - A service worker keeps a copy of the page, never the data, so a screen that powers on while the internet is down still opens. It then picks up the data by itself once the network is back.
 
-Monitoring: `GET /api/v1/health` returns 503 when the warning feeds are stale, the feed poller has stopped, a site file has a mistake, or the 「極端情況」 switch's state cannot be read or saved. Point an uptime monitor at it. `GET /healthz` is the container health check, and docker-compose uses it.
+Monitoring: `GET /api/v1/health` returns 503 in these cases:
+- the warning feeds are stale;
+- the feed poller has stopped;
+- a site file has a mistake;
+- supervisor alerts are misconfigured, or have not been going out for 15 minutes;
+- the 「極端情況」 switch's state cannot be read or saved.
+
+Point an uptime monitor at it. `GET /healthz` is the container health check, and docker-compose uses it.
 
 Hardware, kiosk browser settings, TV power settings, placement and the on-site checks: [docs/site-setup.md](docs/site-setup.md).
+
+## Supervisor alerts
+
+When a site's screen changes state, each supervisor in its `alerts.email` gets one short email. It says what changed, what the screen now shows, which warnings are in force, and the screen's link. Changes are:
+- the Heat Stress at Work Warning level (`iconIndex` only);
+- any HKO warning issued, changed or cancelled, in `warnsum`, plus the Pre-8 announcement.
+
+Whoever runs the server (`ALERT_OPERATOR`) gets one email when the warning data goes stale, and one when it comes back.
+
+- A message repeats only what the screen shows: official warning names and the screen's own lines, from `config/display_actions.json` and `config/rest_schedule.json`. It adds no wording, and a test checks every word.
+- One message per real change:
+  - a new state counts once two fetches of its feed in a row agree, because HKO feeds glitch;
+  - what each site was last told is kept on the `alert-state` volume, so a restart never sends again, and a change made while the service was down is still sent;
+  - a rate limit holds back cancellations after 6 quick messages, and merges them into the next message. It never holds back a new warning.
+- Messages arrive 1–2 minutes after the official change. The screen stays the authority.
+- Without `SMTP_HOST`, the service runs in dry run: it writes each message to its log instead of sending it.
+- `docker compose exec ingest python -m app.alerts --test <siteId>` sends a test message showing the screen as it is now (`--test operator` for the operator).
+
+Settings, all in the server's `.env`: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_USER`, `SMTP_PASSWORD`, `ALERT_FROM`, `ALERT_OPERATOR`, `ALERT_DRY_RUN`, `PUBLIC_URL`. Set-up: [docs/site-setup.md](docs/site-setup.md) §8. Design: [supervisor alerts spec](docs/superpowers/specs/2026-11-07-supervisor-alerts-design.md).
 
 ## Local run
 
@@ -171,4 +198,8 @@ Tests: `.venv/bin/python -m pytest tests -q`. Kiosk type-check and build: `cd ap
 docker compose up --build -d
 ```
 
-Open http://SERVER_IP/ (live). Do not commit `.env`, origin certificates, or real site names. Site files live in `config/sites/` on the server: copy `config/sites/demo-site.json`. Both containers have health checks (`docker compose ps`). Location, the offline copy and wake lock need `https://`. The 「極端情況」 switch stays off until `ADMIN_KEY` is in `.env` ([docs/site-setup.md](docs/site-setup.md) §8). Its state is kept in the `state` volume, which `docker compose down -v` would delete.
+Open http://SERVER_IP/ (live). Do not commit `.env`, origin certificates, or real site names. Site files live in `config/sites/` on the server: copy `config/sites/demo-site.json`. Both containers have health checks (`docker compose ps`). Location, the offline copy and wake lock need `https://`.
+
+SMTP credentials go only in the server's `.env`, written from Bitwarden (docs/site-setup.md §8). After changing `.env`, run `docker compose up -d ingest`; `restart` does not read it again. The `alert-state` volume keeps what each site's supervisors were last told. `docker compose down -v` deletes it, and the next start then remembers the current state quietly.
+
+The 「極端情況」 switch stays off until `ADMIN_KEY` is in `.env` ([docs/site-setup.md](docs/site-setup.md) §9). It is kept on a volume of its own, `extreme-state`. `docker compose down -v` deletes that too, which switches 「極端情況」 off.

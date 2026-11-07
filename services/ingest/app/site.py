@@ -1,5 +1,6 @@
 """Site configuration: validation, loading every site file, and the trade lists the screen works from."""
 import json
+import re
 from pathlib import Path
 
 from app.stations import OBSERVATORY, station_names, wind_station_names
@@ -8,6 +9,56 @@ WORKLOADS = ("light", "moderate", "heavy", "very_heavy")
 ENVIRONMENTS = ("outdoor", "indoor", "aircon")
 # Official labels, Labour Department guidance notes Appendix 1.
 WORKLOAD_ZH = {"light": "輕勞動", "moderate": "中等勞動", "heavy": "重勞動", "very_heavy": "極重勞動"}
+
+# Supervisor alerts (app.alerts). Only email for now; a chat channel would add its own key next to it.
+ALERT_CHANNELS = ("email",)
+MAX_RECIPIENTS = 20
+_LABEL = r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+EMAIL = re.compile(r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]{1,64}@" + _LABEL + r"(?:\." + _LABEL + r")+")
+_KEY = re.compile(r"[A-Za-z_]{1,32}")
+
+
+def email_address(value):
+    """`value` as an address, or None. Never echo a rejected value: problems are public in /api/v1/health."""
+    if not isinstance(value, str):
+        return None
+    address = value.strip()
+    return address if len(address) <= 254 and EMAIL.fullmatch(address) else None
+
+
+def alert_recipients(site):
+    """({"email": [addresses]}, problems) from the site's optional `alerts` field. Never raises.
+
+    A mistake here must not change what the site's screens show, so the site still loads: a bad address is
+    skipped, the others still get alerts, and each mistake is reported. Problems name the field and index, never
+    the address, because /api/v1/health is public.
+    """
+    raw = site.get("alerts") if isinstance(site, dict) else None
+    if raw is None:
+        return {}, []
+    if not isinstance(raw, dict):
+        return {}, ['alerts must be an object such as {"email": ["name@example.com"]}; no alerts for this site']
+    problems = []
+    for key in raw:
+        if key not in ALERT_CHANNELS:
+            name = f"alerts.{key}" if isinstance(key, str) and _KEY.fullmatch(key) else "a field in alerts"
+            problems.append(f"{name} is not supported; use alerts.email")
+    emails = raw.get("email", [])
+    if not isinstance(emails, list):
+        problems.append("alerts.email must be a list of email addresses; no alerts for this site")
+        emails = []
+    found, seen = [], set()
+    for i, value in enumerate(emails):
+        address = email_address(value)
+        if address is None:
+            problems.append(f"alerts.email[{i}] is not an email address; it gets no alerts")
+        elif address.lower() not in seen:
+            seen.add(address.lower())
+            found.append(address)
+    if len(found) > MAX_RECIPIENTS:
+        problems.append(f"alerts.email has {len(found)} addresses; only the first {MAX_RECIPIENTS} get alerts")
+        found = found[:MAX_RECIPIENTS]
+    return ({"email": found} if found else {}), problems
 
 
 def _adjust_ok(value):
@@ -72,7 +123,8 @@ def load_sites(directory, wanted=None):
 
     A file that cannot be read or is not valid is left out and named in `problems`, so a mistake in one site's
     file never takes the other sites' screens down. Screens of a left-out site show GENERIC_SITE until the file
-    is fixed. Two files with one siteId are both left out, because either could be the wrong one.
+    is fixed. Two files with one siteId are both left out, because either could be the wrong one. A mistake in
+    `alerts` is named too, but leaves the file in: it only affects who gets alerts (alert_recipients).
 
     The default is what a screen without ?site= shows: DEFAULT_SITE (`wanted`), else the demo site, else the
     only site file. None means GENERIC_SITE. It never falls to another site because a file was left out.
@@ -87,6 +139,7 @@ def load_sites(directory, wanted=None):
             text = str(error)
             problems.append(text if text.startswith(where) else f"{where}: {text}")
             continue
+        problems.extend(f"{where}: {problem}" for problem in alert_recipients(site)[1])
         found.setdefault(site.get("siteId") or path.stem, []).append((path.name, site))
     sites, demo = {}, None
     for site_id, entries in found.items():

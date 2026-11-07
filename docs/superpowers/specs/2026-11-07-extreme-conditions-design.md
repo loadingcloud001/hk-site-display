@@ -1,6 +1,6 @@
 # 「極端情況」 (extreme conditions): design
 
-Date: 2026-11-07. Builds on `2026-10-06-gate-screen-upgrade-design.md` (the main spec) and `2026-11-07-site-ready-upgrade-design.md`, where this was listed as a follow-up. Operator guide: `docs/site-setup.md` §8.
+Date: 2026-11-07. Builds on `2026-10-06-gate-screen-upgrade-design.md` (the main spec) and `2026-11-07-site-ready-upgrade-design.md`, where this was listed as a follow-up. Operator guide: `docs/site-setup.md` §9.
 
 ![「極端情況」 with Signal 3 still in force, 16:9](../../demo/extreme.png)
 
@@ -82,7 +82,7 @@ All three calls need `Authorization: Bearer <ADMIN_KEY>` over https.
 
 ### 4.3 State, expiry and restarts
 
-- **The file.** The state is one JSON file, `extreme.json` in `STATE_DIR`, holding `startsAt`, `endsAt` and `setAt`. docker-compose sets `STATE_DIR=/app/state` and mounts the named volume `state` there, so it survives restarts, rebuilds and redeploys. With no file, the switch is off.
+- **The file.** The state is one JSON file, `extreme.json` in `STATE_DIR`, holding `startsAt`, `endsAt` and `setAt`. docker-compose sets `STATE_DIR=/app/extreme-state` and mounts the named volume `extreme-state` there, so it survives restarts, rebuilds and redeploys. With no file, the switch is off. It is a volume of its own: supervisor alerts keep their state on `alert-state`, which the guide says may be deleted, and deleting that must never switch 「極端情況」 off.
 - **Writes** go to a temporary file, then `fsync`, then an atomic rename, so a crash never leaves half a file. If the file cannot be saved, the call answers 503 and nothing changes.
 - **Expiry needs no timer.** Every snapshot works out the status from the clock and the recorded times. So 「極端情況」 ends at the announced end even if the service restarted in between, and a connected screen shows the change within its 30-second poll.
 - **The file is read again when it changes** (modification time and size). A file that cannot be read or makes no sense is never fatal. 「極端情況」 is then off, `extremeProblem` in `/api/v1/health` says why, and health answers 503, so the uptime monitor reports it. Docker's `/healthz` ignores it.
@@ -93,7 +93,7 @@ All three calls need `Authorization: Bearer <ADMIN_KEY>` over https.
 
 - **Who.** The service operator: the person who holds the admin key, which is kept in Bitwarden. A site's staff do not switch it. They call the operator. One switch changes every site's screens, and the announcement is territory-wide anyway.
 - **When.** Only to mirror a Government announcement of 「極端情況」, with its announced times. Never for a site emergency or anything else: the screen would quote the Code of Practice for an announcement that does not exist.
-- **How.** Switch on with the announced end, extend by entering the new end, and switch off only if the Government ends it early. When the announcement gives the start as an event rather than a clock time, for example a signal being replaced, switch on when it happens. `docs/site-setup.md` §8 has the commands.
+- **How.** Switch on with the announced end, extend by entering the new end, and switch off only if the Government ends it early. When the announcement gives the start as an event rather than a clock time, for example a signal being replaced, switch on when it happens. `docs/site-setup.md` §9 has the commands.
 
 ## 5. Ranking
 
@@ -119,6 +119,8 @@ Why:
 | 「極端情況」 scheduled or ended | Whatever HKO and LD say | as usual | as usual |
 
 **Banner.** 「極端情況」 生效 shows for 10 minutes after the start, and 「極端情況」 結束 for 10 minutes after the end. Both outrank every HKO event. That matters in a likely start, since 「極端情況」 covers the aftermath: Signal 8 replaced by Signal 3 in the same minute that 「極端情況」 takes effect. The start banner never appears before the start, unlike the heat-stress banner's 15-minute lead, because the centre only changes at the start. Stale data hides the banner, as before.
+
+**Supervisor alerts.** They read the same snapshot as the screens (`_live_snapshot` in `main.py`), so an alert sent while 「極端情況」 is in force repeats its lines exactly as the screen shows them: the instruction, the sub line, the meta line with the times, and its 主管注意 line. Switching 「極端情況」 on or off sends no alert, because alerts follow only the heat stress warning and HKO's warnings (§11).
 
 ## 6. Screen
 
@@ -204,9 +206,9 @@ All additive. A kiosk deployed before this change shows the instruction, the sub
 ## 10. Rollout
 
 1. Generate a key and store it in Bitwarden as `HK_SITE_DISPLAY_ADMIN_KEY`.
-2. On the server, add `ADMIN_KEY=…` to `~/hk-site-display/.env`, without echoing it (`docs/site-setup.md` §8).
-3. Tag the running images (`pre-extreme`), then deploy ingest and web as before. The compose file changed (new variables and the `state` volume), so `up -d` recreates ingest with the volume. Caddy is unchanged.
-4. Check `/api/v1/health`: `"extreme": {"status": "off"}` and `"extremeProblem": null`. Then run the authenticated GET from §8 of the guide, through the public `https://` address. It should answer `{"status": "off"}`. If it answers 403 `https-required`, the proxy in front of the server reaches it over plain http (with Cloudflare, SSL mode Flexible): set that to Full (strict), then replace the key, which has crossed the internet in clear.
+2. On the server, add `ADMIN_KEY=…` to `~/hk-site-display/.env`, without echoing it (`docs/site-setup.md` §9).
+3. Tag the running images (`pre-extreme`), then deploy ingest and web as before. The compose file changed (new variables and the `extreme-state` volume), so `up -d` recreates ingest with the volume. Caddy is unchanged.
+4. Check `/api/v1/health`: `"extreme": {"status": "off"}` and `"extremeProblem": null`. Then run the authenticated GET from §9 of the guide, through the public `https://` address. It should answer `{"status": "off"}`. If it answers 403 `https-required`, the proxy in front of the server reaches it over plain http (with Cloudflare, SSL mode Flexible): set that to Full (strict), then replace the key, which has crossed the internet in clear.
 5. Optionally, rehearse on the live screens with a scheduled announcement a few minutes ahead, then DELETE it before it starts. A withdrawn announcement leaves no banner.
 
 ## 11. Follow-ups
@@ -214,4 +216,4 @@ All additive. A kiosk deployed before this change shows the instruction, the sub
 - **After 「極端情況」, Signal 8 or above, or Black rain ends.** The Code (Chapter 3) requires cranes, scaffolding, gondolas, electrical installations and similar equipment to be examined by a competent examiner or person before they are used again. The screen goes straight back to 正常工作. A supervisor line for some hours after the end would close that gap. How long is a product decision, so it is not in this change.
 - **Two-line instruction in portrait** (§6.1), if portrait screens turn out to be read from further away.
 - **English line**, using the official English Code of Practice's wording for the same bullets, under the same verbatim test.
-- **Alerts for supervisors** when the switch changes, with the same channel as the planned signal alerts.
+- **An alert when the switch changes.** Supervisor alerts (`app/alerts.py`) send nothing when 「極端情況」 starts or ends. A message for it would use the banner's words, 「極端情況」 生效 and 「極端情況」 結束.

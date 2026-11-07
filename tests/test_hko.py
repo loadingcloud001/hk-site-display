@@ -1,4 +1,4 @@
-from app.hko import active_codes, parse_warnsum, parse_warnsum_events, parse_warning_info
+from app.hko import active_codes, parse_warnsum, parse_warnsum_events, parse_warning_info, warning_name
 
 
 def test_empty():
@@ -52,3 +52,21 @@ def test_events_keep_cancellations_with_times():
 def test_events_ignore_bad_input():
     assert parse_warnsum_events({"x": "y"}) == []
     assert parse_warnsum_events(None) == []
+
+
+def test_warning_name_is_the_official_name_in_each_language():
+    # HKO's live feed sends only the colour as `type` for rainstorm and fire danger warnings.
+    black = {"name": "暴雨警告信號", "code": "WRAINB", "type": "黑色"}
+    assert warning_name(black) == "黑色暴雨警告信號"
+    amber_en = {"name": "Rainstorm Warning Signal", "code": "WRAINA", "type": "Amber"}
+    assert warning_name(amber_en, "en") == "Amber Rainstorm Warning Signal"
+    assert warning_name({"name": "Fire Danger Warning", "code": "WFIRER", "type": "Red"}, "en") == "Red Fire Danger Warning"
+    assert warning_name({"name": "火災危險警告", "code": "WFIREY", "type": "黃色"}) == "黃色火災危險警告"
+    # Tropical cyclone signals: `type` is the signal's own name.
+    t8 = {"name": "Tropical Cyclone Warning Signal", "code": "TC8NE", "type": "No. 8 Northeast Gale or Storm Signal"}
+    assert warning_name(t8, "en") == "No. 8 Northeast Gale or Storm Signal"
+    assert warning_name({"name": "熱帶氣旋警告信號", "code": "TC3", "type": "三號強風信號"}) == "三號強風信號"
+    # No `type`: the name. A `type` that already holds the whole name is kept as it is.
+    assert warning_name({"name": "Thunderstorm Warning", "code": "WTS"}, "en") == "Thunderstorm Warning"
+    assert warning_name({"name": "暴雨警告信號", "code": "WRAINB", "type": "黑色暴雨警告信號"}) == "黑色暴雨警告信號"
+    assert warning_name({}) == ""

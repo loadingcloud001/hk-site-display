@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app import extreme
+from app.alerts import engine_from_env
 from app.feeds import Feed, FeedSet
 from app.sim_cases import ALIASES, CASE_IDS, build_case, list_cases, list_official_icons
 from app.site import GENERIC_SITE, load_sites
@@ -42,8 +43,16 @@ SCHEDULE = json.loads((ROOT / "config/rest_schedule.json").read_text(encoding="u
 ICONS = json.loads((ROOT / "config/official_icons.json").read_text(encoding="utf-8"))
 
 log = logging.getLogger("hk_site_display")
+if not log.handlers:  # uvicorn configures only its own loggers; without this, INFO lines such as alerts are lost
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    log.addHandler(_handler)
+    log.setLevel(logging.INFO)
 for _problem in SITE_PROBLEMS:
-    log.error("site config left out: %s", _problem)
+    log.error("site config problem: %s", _problem)
+
+# Supervisor alerts (app.alerts): SMTP settings, ALERT_OPERATOR and the state file come from the environment.
+ALERTS = engine_from_env(os.environ, SITES, ROOT, stale_after=STALE_AFTER)
 
 # The 「極端情況」 switch (app/extreme.py). Its state lives in STATE_DIR, a Docker volume, so it survives restarts.
 # ADMIN_KEY comes from the server's untracked .env (kept in Bitwarden); without it the admin endpoints are off.
@@ -112,6 +121,11 @@ def _poll(stop):
             FEEDS.refresh_due()
         except Exception:  # one bad cycle must never stop the screens' data for good
             log.exception("feed refresh failed")
+        try:
+            now = datetime.now(HKT)
+            ALERTS.check(now, feed_marks(), snapshot_for(now))
+        except Exception:  # alerts must never stop the screens' data either
+            log.exception("alert check failed")
         POLLER["last"] = time.monotonic()
         stop.wait(POLL_SEC)
 
@@ -139,6 +153,36 @@ def _stale(now):
     return any(age is None or age >= STALE_AFTER for age in ages)
 
 
+def _live_snapshot(site, now, position=None):
+    """What a live screen shows. The alerts read the same snapshot, so they always match the screen, 「極端情況」
+    included."""
+    return build_snapshot(
+        FEEDS.value("hsww") or {},
+        FEEDS.value("warnsum") or {},
+        FEEDS.value("warningInfo") or {},
+        FEEDS.value("rhrread") or {},
+        site,
+        SCHEDULE,
+        ICONS,
+        fnd=FEEDS.value("fnd") or {},
+        now=now,
+        stale=_stale(now),
+        position=position,
+        wind=FEEDS.value("wind"),
+        extreme=EXTREME.get(),
+    )
+
+
+def snapshot_for(now):
+    """For the alerts: a site's live snapshot as a screen without a position sees it (None: any site)."""
+    return lambda site: _live_snapshot(site or GENERIC_SITE, now)
+
+
+def feed_marks():
+    """When each feed last fetched successfully. The alerts read a feed again only after a new fetch."""
+    return {name: feed.fetched_at for name, feed in FEEDS.feeds.items()}
+
+
 def _poller_ok():
     if not ENABLE_POLLER:
         return True
@@ -155,8 +199,9 @@ def healthz():
 
 @app.get("/api/v1/health")
 def health():
-    """For an uptime monitor: 503 when the warning feeds are stale, the poller has stopped, a site file is bad or
-    the 「極端情況」 switch cannot read or save its state."""
+    """For an uptime monitor: 503 when the warning feeds are stale, the poller has stopped, a site file has a
+    mistake, supervisor alerts are misconfigured or have not been going out for 15 minutes, or the 「極端情況」
+    switch cannot read or save its state."""
     now = datetime.now(HKT)
     stale = _stale(now)
     poller = _poller_ok()
@@ -167,7 +212,7 @@ def health():
     switch = extreme.state(EXTREME.get(), now)
     problem = EXTREME.problem
     body = {
-        "ok": poller and not stale and not SITE_PROBLEMS and not problem,
+        "ok": poller and not stale and not SITE_PROBLEMS and ALERTS.healthy(now) and not problem,
         "stale": stale,
         "poller": poller,
         "feeds": feeds,
@@ -175,6 +220,7 @@ def health():
         "siteProblems": SITE_PROBLEMS,
         "extreme": switch,
         "extremeProblem": problem,
+        "alerts": ALERTS.status(now),
     }
     return JSONResponse(body, status_code=200 if body["ok"] else 503)
 
@@ -207,23 +253,7 @@ def snapshot(
         FEEDS.refresh_due()
     if FEEDS.value("hsww") is None and FEEDS.value("warnsum") is None:
         raise HTTPException(status_code=503, detail="no-data")
-    now = datetime.now(HKT)
-    stale = _stale(now)
-    snap = build_snapshot(
-        FEEDS.value("hsww") or {},
-        FEEDS.value("warnsum") or {},
-        FEEDS.value("warningInfo") or {},
-        FEEDS.value("rhrread") or {},
-        _site(site),
-        SCHEDULE,
-        ICONS,
-        fnd=FEEDS.value("fnd") or {},
-        now=now,
-        stale=stale,
-        position=parse_position(lat, lon, acc),
-        wind=FEEDS.value("wind"),
-        extreme=EXTREME.get(),
-    )
+    snap = _live_snapshot(_site(site), datetime.now(HKT), parse_position(lat, lon, acc))
     snap["source"] = "live"
     return snap
 
