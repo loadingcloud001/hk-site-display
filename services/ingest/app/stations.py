@@ -5,9 +5,18 @@ from pathlib import Path
 from typing import NamedTuple, Optional
 
 ROOT = Path(__file__).resolve().parents[3]
-STATIONS = json.loads((ROOT / "config" / "hko_stations.json").read_text(encoding="utf-8"))["stations"]
+_TABLE = json.loads((ROOT / "config" / "hko_stations.json").read_text(encoding="utf-8"))
+STATIONS = _TABLE["stations"]
+WIND_STATIONS = _TABLE.get("windStations") or []
 # The general HKO reading, shown whenever no better station is known.
 OBSERVATORY = "香港天文台"
+# HKO forecasts winds on high ground (高地) separately: stations this high (Ngong Ping, Tate's Cairn) read far
+# stronger winds than a site at street level, so they are never chosen as the nearest wind station.
+HIGH_GROUND_M = 300
+# Wind stations a screen's position can choose: ground level, with published coordinates.
+NEAR_WIND_STATIONS = [
+    s for s in WIND_STATIONS if s.get("lat") is not None and (s.get("elevation") or 0) < HIGH_GROUND_M
+]
 
 # A fix coarser than this cannot tell neighbouring stations apart, as with a position guessed from an IP address.
 MAX_ACCURACY_M = 5000
@@ -25,6 +34,10 @@ class Position(NamedTuple):
 
 def station_names():
     return frozenset(s["name"] for s in STATIONS)
+
+
+def wind_station_names():
+    return frozenset(s["name"] for s in WIND_STATIONS)
 
 
 def distance_km(lat1, lon1, lat2, lon2):
@@ -56,16 +69,17 @@ def parse_position(lat, lon, accuracy=None):
     return Position(la, lo, acc)
 
 
-def nearest_station(position, available):
+def nearest_station(position, available, stations=None):
     """Name of the station closest to `position` among the `available` names, or None.
 
+    `stations` is the table to choose from (temperature stations by default).
     None also means the fix cannot be trusted (too coarse) or is nowhere near Hong Kong.
     """
     if position.accuracy is not None and position.accuracy > MAX_ACCURACY_M:
         return None
     best = None
-    for station in STATIONS:
-        if station["name"] not in available:
+    for station in STATIONS if stations is None else stations:
+        if station["name"] not in available or station.get("lat") is None:
             continue
         d = distance_km(position.lat, position.lon, station["lat"], station["lon"])
         if best is None or d < best[0]:

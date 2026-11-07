@@ -8,11 +8,28 @@ services:
       STALE_AFTER_SEC: "600"
       ENABLE_SIM: "true"
       ENABLE_LIVE_POLLER: "true"
+      # The site a screen without ?site= shows; empty means config/sites/demo-site.json.
+      DEFAULT_SITE: "${DEFAULT_SITE:-}"
+    volumes:
+      # Site files are read from the server, so changing a site's trades needs a restart, not a rebuild.
+      - ./config/sites:/app/config/sites:ro
+    healthcheck:
+      # 503 when the feed poller has stopped finishing its cycles.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
   web:
     build:
       context: .
       dockerfile: apps/kiosk/Dockerfile
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   caddy:
     image: caddy:2
     restart: unless-stopped

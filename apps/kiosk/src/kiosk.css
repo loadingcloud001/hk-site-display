@@ -138,9 +138,19 @@ html.gallery-page #root {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1.3cqh;
   padding: 9cqh 3cqw 0.6cqh;
   text-align: center;
+}
+
+/* The centre content, scaled down as a whole when it is taller than the room (useCenterScale in Screen.tsx). */
+.fit {
+  flex: none;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.3cqh;
+  transform-origin: 50% 50%;
 }
 
 .plate {
@@ -333,6 +343,7 @@ html.gallery-page #root {
   display: flex;
   align-items: center;
   gap: 1cqw;
+  overflow: hidden;
 }
 
 .rail .plate {
@@ -347,8 +358,32 @@ html.gallery-page #root {
 .info {
   display: flex;
   align-items: center;
-  gap: 2cqw;
+  gap: 4cqw;
   white-space: nowrap;
+}
+
+/* A thin rule between the bar's blocks, centred in the gap. */
+.info > * + * {
+  position: relative;
+}
+
+.info > * + *::before {
+  content: "";
+  position: absolute;
+  left: -2cqw;
+  top: 50%;
+  width: 0.25cqh;
+  height: 9cqh;
+  transform: translate(-50%, -50%);
+  background: color-mix(in srgb, var(--fg) 30%, transparent);
+}
+
+/* Room for the warning icons first (see useFit in Screen.tsx). */
+.stage[data-drop] .metaw,
+.stage[data-drop="2"] .tmr,
+.stage[data-drop="3"] .tmr,
+.stage[data-drop="3"] .wind {
+  display: none;
 }
 
 .wx {
@@ -405,10 +440,37 @@ html.gallery-page #root {
   margin-bottom: 0.6cqh;
 }
 
-.sep {
-  width: 0.25cqh;
-  height: 9cqh;
-  background: color-mix(in srgb, var(--fg) 30%, transparent);
+.range small.psr {
+  margin: 0.7cqh 0 0;
+}
+
+.wind {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7cqh;
+}
+
+.wind .gust {
+  font-size: 5.2cqh;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.wind .gust small {
+  font-size: 2.3cqh;
+  font-weight: 700;
+  margin-left: 0.4cqw;
+}
+
+.wind .gust small:first-child {
+  margin: 0 0.4cqw 0 0;
+}
+
+.wind .mean {
+  font-size: 2.3cqh;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .clock {
@@ -471,6 +533,9 @@ html.gallery-page #root {
 
   .center {
     padding: 7cqh 4cqw 0.6cqh;
+  }
+
+  .fit {
     gap: 1.2cqh;
   }
 
@@ -581,8 +646,10 @@ html.gallery-page #root {
 
   .rail {
     flex: none;
+    flex-wrap: wrap;
     justify-content: center;
-    gap: 3cqw;
+    gap: 2cqh 3cqw;
+    overflow: visible;
   }
 
   .rail .plate img {
@@ -590,10 +657,23 @@ html.gallery-page #root {
     width: 13cqw;
   }
 
+  /* Two columns: weather and wind, then tomorrow and the clock. A lone last block is centred. */
   .info {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, auto);
     justify-content: center;
-    gap: 2cqh 5cqw;
+    justify-items: start;
+    align-items: center;
+    gap: 2.2cqh 7cqw;
+  }
+
+  .info > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+
+  .info > * + *::before {
+    display: none;
   }
 
   .wx .plate img {
@@ -623,21 +703,21 @@ html.gallery-page #root {
     font-size: 5.6cqw;
   }
 
-  .sep-clock {
-    display: none;
+  .wind .gust {
+    font-size: 6.8cqw;
+  }
+
+  .wind .gust small,
+  .wind .mean {
+    font-size: 3cqw;
   }
 
   .clock {
-    flex-basis: 100%;
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: 3cqw;
-    text-align: center;
+    text-align: left;
   }
 
   .clock .t {
-    font-size: 10cqw;
+    font-size: 9.6cqw;
   }
 
   .clock .d {

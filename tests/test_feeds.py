@@ -48,3 +48,9 @@ def test_age_in_seconds():
     assert feeds.age("a", now) is None
     feeds.feeds["a"].fetched_at = now - timedelta(minutes=11)
     assert feeds.age("a", now) == 660
+
+
+def test_unknown_feed_has_no_value_or_age():
+    feeds = FeedSet([Feed("a", lambda _client: 1, 60)], nullcontext)
+    assert feeds.value("nope") is None
+    assert feeds.age("nope", datetime.now(HKT)) is None

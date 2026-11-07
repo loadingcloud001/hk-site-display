@@ -5,6 +5,7 @@ from pathlib import Path
 
 from app.site import validate_site
 from app.snapshot import build_snapshot
+from app.wind import parse_wind_csv
 
 HKT = timezone(timedelta(hours=8))
 ROOT = Path(__file__).resolve().parents[3]
@@ -42,6 +43,13 @@ def _rhrread(minutes_ago: int) -> dict:
     raw = json.loads((FIX / "rhrread_sample.json").read_text(encoding="utf-8"))
     raw["updateTime"] = _ago(minutes_ago)
     return raw
+
+
+def _wind(minutes_ago: int) -> dict:
+    """HKO's real 10-minute wind report (tests/fixtures/wind_10min_uc.csv), re-timed to the preview clock."""
+    text = (FIX / "wind_10min_uc.csv").read_text(encoding="utf-8")
+    stamp = (SIM_NOW - timedelta(minutes=minutes_ago)).strftime("%Y%m%d%H%M")
+    return parse_wind_csv(re.sub(r"^\d{12}(?=,)", stamp, text.lstrip("\ufeff"), flags=re.M))
 
 
 def _fnd(minutes_ago: int) -> dict:
@@ -358,6 +366,7 @@ SPECS = [
     },
     {"id": "weather-old", "labelZh": "天氣資料過舊", "group": "other", "rhrreadAgo": 120},
     {"id": "forecast-old", "labelZh": "預報資料過舊", "group": "other", "fndAgo": 13 * 60},
+    {"id": "wind-old", "labelZh": "風速資料過舊", "group": "other", "windAgo": 45},
 ]
 
 CASE_IDS = [s["id"] for s in SPECS]
@@ -403,11 +412,13 @@ WARN_LABELS = {
 }
 
 
-def build_case(name: str) -> dict:
+def build_case(name: str, site: dict | None = None) -> dict:
+    """The preview snapshot for a case, for `site` (a loaded site file) or the demo site."""
     spec = _BY_ID.get(ALIASES.get(name, name))
     if spec is None:
         raise KeyError(name)
-    site = validate_site({**SITE, **spec["site"]}) if spec.get("site") else SITE
+    base = site or SITE
+    site = validate_site({**base, **spec["site"]}) if spec.get("site") else base
     snap = build_snapshot(
         _hsww(spec.get("hsww", CANCELLED), spec.get("hswwAgo")),
         spec.get("warnsum") or {},
@@ -419,6 +430,7 @@ def build_case(name: str) -> dict:
         fnd=_fnd(spec.get("fndAgo", OLD)),
         now=SIM_NOW,
         stale=bool(spec.get("stale")),
+        wind=_wind(spec.get("windAgo", 6)),
     )
     if spec.get("stale"):
         snap["tone"] = "stale"

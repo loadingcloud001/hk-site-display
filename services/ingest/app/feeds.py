@@ -53,10 +53,12 @@ class FeedSet:
                     feed.refresh(client, datetime.now(HKT))
 
     def value(self, name):
-        return self.feeds[name].value
+        feed = self.feeds.get(name)
+        return feed.value if feed else None
 
     def age(self, name, now):
-        at = self.feeds[name].fetched_at
+        feed = self.feeds.get(name)
+        at = feed.fetched_at if feed else None
         return None if at is None else (now - at).total_seconds()
 
     def never_fetched(self):

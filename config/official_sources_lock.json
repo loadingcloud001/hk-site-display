@@ -1,0 +1,17 @@
+{
+  "_note": "Labour Department PDFs as last verified by a person (spec §9). After re-verifying a changed PDF, run: python3 scripts/check_official_sources.py --update-lock",
+  "ld-gn-heat": {
+    "url": "https://www.labour.gov.hk/common/public/oh/Heat_Stress_GN_tc.pdf",
+    "sha256": "bef66b02d0f2af3b11a0f2f7ad6e386bd170b5f0083e9337349502d84df55669",
+    "size": 2935483,
+    "lastModified": "Thu, 27 Aug 2026 05:55:00 GMT",
+    "checked": "2026-10-06"
+  },
+  "ld-cop-weather": {
+    "url": "https://www.labour.gov.hk/tc/public/pdf/wcp/Rainstorm.pdf",
+    "sha256": "11d8c7f2a921ee59328edb8afbcf8488b52f0819cfd77b2a5d0f673a808e077d",
+    "size": 7557313,
+    "lastModified": "Fri, 05 Jun 2026 06:23:00 GMT",
+    "checked": "2026-10-06"
+  }
+}

@@ -1,4 +1,4 @@
-"""Build config/hko_stations.json: where each HKO temperature station is.
+"""Build config/hko_stations.json: where each HKO temperature and wind station is.
 
 Run from the repo root:
     python3 scripts/fetch_hko_stations.py           rewrite the file
@@ -6,7 +6,14 @@ Run from the repo root:
 
 Coordinates come from HKO's "Information of Weather Station" page. The current weather report
 (rhrread) names its stations differently, so PLACES maps each report name to a station code.
+
+The 10-minute wind report names its stations in Chinese only. HKO's English wind report lists the same
+stations in the same order, and HKO's wind page gives the code of each English name, so the script
+derives every code from HKO itself and fails if WIND_PLACES no longer matches.
 """
+import csv
+import html
+import io
 import json
 import re
 import sys
@@ -19,6 +26,9 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "config" / "hko_stations.json"
 STATION_PAGE = "https://www.hko.gov.hk/en/cis/stn.htm"
 RHRREAD = "https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc"
+WIND_PAGE = "https://www.hko.gov.hk/en/wxinfo/ts/display_element_ff.htm"
+WIND_CSV = "https://data.weather.gov.hk/weatherAPI/hko_data/regional-weather/latest_10min_wind_uc.csv"
+WIND_CSV_EN = "https://data.weather.gov.hk/weatherAPI/hko_data/regional-weather/latest_10min_wind.csv"
 
 # rhrread temperature `place` -> HKO station code (stn.htm). Only stations that measure air temperature.
 PLACES = {
@@ -50,6 +60,42 @@ PLACES = {
     "元朗公園": "YLP",
     "大美督": "PLC",
 }
+
+# 10-minute wind report station -> HKO station code (codes from WIND_PAGE, checked by derive_wind_codes).
+WIND_PLACES = {
+    "中環碼頭": "CP1",
+    "赤鱲角": "HKA",  # Hong Kong International Airport
+    "長洲": "CCH",
+    "長洲泳灘": "CCB",
+    "青洲": "GI",
+    "香港航海學校": "HSS",  # on HKO's wind page but not on the station page, so it has no coordinates
+    "啟德": "SE",
+    "京士柏": "KP",
+    "南丫島": "LAM",
+    "流浮山": "LFS",
+    "昂坪": "NGP",
+    "北角": "NP",
+    "坪洲": "PEN",
+    "西貢": "SKG",
+    "沙洲": "SC",
+    "沙田": "SHA",
+    "石崗": "SEK",
+    "赤柱": "BHD",  # Bluff Head, which HKO's wind page calls Stanley
+    "天星碼頭": "SF",
+    "打鼓嶺": "TKL",
+    "大美督": "PLC",
+    "大埔滘": "TPK",
+    "塔門": "TME",  # Tap Mun East; Tap Mun (TAP) measures temperature only
+    "大老山": "TC",
+    "將軍澳": "JKB",
+    "青衣": "SHL",  # Shell Oil Depot, which HKO's wind page calls Tsing Yi
+    "屯門": "TUN",  # Tuen Mun Government Offices
+    "橫瀾島": "WGL",
+    "濕地公園": "WLP",
+    "黃竹坑": "HKS",
+}
+# Wind stations HKO lists without coordinates. They can be a site's fallback but are never "nearest".
+NO_COORDINATES = {"HSS"}
 
 
 class _Tables(HTMLParser):
@@ -97,8 +143,16 @@ def degrees(dms):
     return round(d + m / 60 + s / 3600, 5)
 
 
+def _station_name(cell):
+    match = re.fullmatch(r"(.*?)\s*\(([A-Z0-9]+)\) \(\d\d/\d\d/\d{4}\)", cell)
+    if not match:
+        raise ValueError(f"unexpected station row: {cell!r}")
+    name, code = match.groups()
+    return re.sub(r"(?<=\S)\(", " (", name.rstrip("*").strip()), code
+
+
 def parse_stations(page):
-    """code -> {nameEn, lat, lon, temp} for the manned and automatic weather station tables."""
+    """code -> {nameEn, lat, lon, elevation, wind, temp} for the weather and wind station tables."""
     parser = _Tables()
     parser.feed(page)
     found = {}
@@ -106,17 +160,31 @@ def parse_stations(page):
     # Columns after the elevation are wind, then air temperature.
     for table in parser.tables[1:3]:
         for row in table[2:]:
-            match = re.fullmatch(r"(.*?)\s*\(([A-Z0-9]+)\) \(\d\d/\d\d/\d{4}\)", row[0])
-            if not match:
-                raise ValueError(f"unexpected station row: {row[0]!r}")
-            name, code = match.groups()
-            name = re.sub(r"(?<=\S)\(", " (", name.rstrip("*").strip())
+            name, code = _station_name(row[0])
             found[code] = {
                 "nameEn": name,
                 "lat": degrees(row[1]),
                 "lon": degrees(row[2]),
+                "elevation": round(float(row[3])),
+                "wind": row[4] == "✔",
                 "temp": row[5] == "✔",
             }
+    # tables[4] = automatic wind stations: name, latitude, longitude, anemometer height above sea level.
+    if not parser.tables[4][0][0].startswith("Automatic Wind Station"):
+        raise ValueError("the automatic wind station table has moved")
+    for row in parser.tables[4][2:]:
+        name, code = _station_name(row[0])
+        found.setdefault(
+            code,
+            {
+                "nameEn": name,
+                "lat": degrees(row[1]),
+                "lon": degrees(row[2]),
+                "elevation": round(float(row[3])),
+                "wind": True,
+                "temp": False,
+            },
+        )
     return found
 
 
@@ -134,6 +202,63 @@ def build(found):
     return stations
 
 
+def build_wind(found, english):
+    """The wind table in WIND_PLACES order; `english` maps each report name to its English name."""
+    stations = []
+    for place, code in WIND_PLACES.items():
+        station = found.get(code)
+        if station is None and code not in NO_COORDINATES:
+            raise SystemExit(f"{place}: wind station code {code} is not on {STATION_PAGE}")
+        if station is not None and not station["wind"]:
+            raise SystemExit(f"{place}: station {code} does not measure wind")
+        stations.append(
+            {
+                "name": place,
+                "nameEn": station["nameEn"] if station else english.get(place, ""),
+                "code": code,
+                "lat": station["lat"] if station else None,
+                "lon": station["lon"] if station else None,
+                "elevation": station["elevation"] if station else None,
+            }
+        )
+    return stations
+
+
+def _csv_rows(text):
+    rows = list(csv.reader(io.StringIO(text.lstrip("\ufeff"))))
+    return [row for row in rows[1:] if len(row) >= 2]
+
+
+def derive_wind_codes():
+    """(report name -> code, report name -> English name), from HKO's own wind page and reports."""
+    codes = {
+        html.unescape(name).strip(): code.upper()
+        for code, name in re.findall(r'<option value="#([a-z0-9]+)">([^<]+)</option>', get(WIND_PAGE))
+    }
+    for _ in range(3):  # the two reports can straddle a 10-minute update
+        tc, en = _csv_rows(get(WIND_CSV)), _csv_rows(get(WIND_CSV_EN))
+        if len(tc) == len(en) and all(a[0] == b[0] for a, b in zip(tc, en)):
+            break
+    else:
+        raise SystemExit("the Chinese and English wind reports do not line up")
+    english = {a[1]: b[1] for a, b in zip(tc, en)}
+    return {place: codes.get(name) for place, name in english.items()}, english
+
+
+def check_wind_codes(derived):
+    """Problems with WIND_PLACES against the codes HKO publishes, as text lines."""
+    problems = []
+    for place, code in derived.items():
+        if place not in WIND_PLACES:
+            problems.append(f"in the live wind report but not in WIND_PLACES: {place} ({code or 'no code on HKO wind page'})")
+        elif WIND_PLACES[place] != code:
+            problems.append(f"{place}: WIND_PLACES says {WIND_PLACES[place]}, HKO's wind page says {code}")
+    for place in WIND_PLACES:
+        if place not in derived:
+            print(f"note: not in the live wind report right now: {place}")
+    return problems
+
+
 def report_gaps():
     """(places in the live report that PLACES lacks, places in PLACES the live report lacks)."""
     report = json.loads(get(RHRREAD))
@@ -143,23 +268,37 @@ def report_gaps():
 
 def main(argv):
     check = "--check" in argv
-    stations = build(parse_stations(get(STATION_PAGE)))
+    found = parse_stations(get(STATION_PAGE))
+    stations = build(found)
     new, gone = report_gaps()
     if new:
         print(f"in the live report but not in PLACES (add a station code): {', '.join(new)}")
     if gone:
         print(f"note: not in the live report right now: {', '.join(gone)}")
+    derived, english = derive_wind_codes()
+    wind_problems = check_wind_codes(derived)
+    for line in wind_problems:
+        print(line)
+    wind = build_wind(found, english)
     current = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}
-    changed = current.get("stations") != stations
+    changed = current.get("stations") != stations or current.get("windStations") != wind
     if check:
         if changed:
             print(f"{OUT.relative_to(ROOT)} differs from {STATION_PAGE}")
-        ok = not new and not changed
+        ok = not new and not wind_problems and not changed
         print("up to date" if ok else "out of date")
         return 0 if ok else 1
-    document = {"source": STATION_PAGE, "checked": date.today().isoformat(), "stations": stations}
+    if wind_problems:
+        return 1
+    document = {
+        "source": STATION_PAGE,
+        "windSource": WIND_PAGE,
+        "checked": date.today().isoformat(),
+        "stations": stations,
+        "windStations": wind,
+    }
     OUT.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"wrote {OUT.relative_to(ROOT)}: {len(stations)} stations")
+    print(f"wrote {OUT.relative_to(ROOT)}: {len(stations)} temperature and {len(wind)} wind stations")
     return 0
 
 

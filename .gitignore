@@ -15,3 +15,6 @@ qa2-*.png
 *.egg-info/
 .DS_Store
 Thumbs.db
+# Real site files live on the server only (docs/site-setup.md); only the demo is in git.
+config/sites/*
+!config/sites/demo-site.json

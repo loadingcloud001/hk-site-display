@@ -87,8 +87,17 @@ def test_current_empty_uv_and_unknown_icon():
 
 def test_forecast_picks_first_future_day():
     assert parse_forecast(load("fnd_sample.json"), NOW) == {
-        "date": "20261007", "iconRel": "official/wxicon/pic81.png", "minC": 23, "maxC": 30
+        "date": "20261007", "iconRel": "official/wxicon/pic81.png", "minC": 23, "maxC": 30, "psrZh": "低"
     }
+
+
+def test_forecast_carries_the_probability_of_significant_rain():
+    raw = load("fnd_sample.json")
+    for value in ("高", "中高", "中", "中低", "低"):
+        raw["weatherForecast"][0]["PSR"] = value
+        assert parse_forecast(raw, NOW)["psrZh"] == value
+    raw["weatherForecast"][0]["PSR"] = "High"  # anything but HKO's five Chinese values is not shown
+    assert parse_forecast(raw, NOW)["psrZh"] is None
 
 
 def test_forecast_skips_today_and_expires():
