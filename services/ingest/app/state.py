@@ -1,4 +1,9 @@
-"""Which state the screen is in, its tone, and the supervisor lines."""
+"""Which state the screen is in, its tone, and the supervisor lines.
+
+States, first match wins (snapshot.build_snapshot): 「極端情況」 in force, then a weather state in WEATHER_ORDER,
+then heat stress, then normal. 「極端情況」 has no official icon, so it takes the centre over every HKO warning,
+while every HKO warning in force keeps its icon on the bar (extreme conditions spec §5).
+"""
 from app.actions import ZH_JOIN, english_text
 
 # Spec §4.2: instructions to stay sheltered outrank instructions to leave.
@@ -13,6 +18,8 @@ def winning_weather_code(codes):
 
 
 def state_tone(mode, code, level):
+    if mode == "extreme":
+        return "extreme"
     if mode == "weather":
         if code in ("TC8NE", "TC8SE", "TC8NW", "TC8SW", "TC9", "TC10"):
             return "p0-tc"

@@ -9,10 +9,10 @@
     },
     "ld-cop-weather": {
       "lang": "zh",
-      "titleZh": "勞工處《惡劣天氣及「極端情況」下的工作守則》",
+      "titleZh": "勞工處《惡劣天氣及「極端情況」下工作守則》",
       "edition": "2026年5月（中文版2026年6月）",
       "url": "https://www.labour.gov.hk/tc/public/pdf/wcp/Rainstorm.pdf",
-      "checked": "2026-10-06"
+      "checked": "2026-11-07"
     },
     "hko-tc": {
       "lang": "zh",
@@ -333,6 +333,35 @@
         ],
         "quotes": [
           {"source": "ld-gn-heat-en", "text": "For instance, employers should let employees performing light to moderate levels of physical work have a minimum of a 10-minute rest break after every 2 hours of work, while employees performing heavy to very heavy levels of physical work should be given at least a 15-minute rest break after every 2 hours of work (If the Heat Stress at Work Warning is in effect, employers should arrange hourly rest time for the employees in need as recommended in section 5.5 of these Guidance Notes)."}
+        ]
+      }
+    }
+  },
+  "extreme": {
+    "display": {
+      "where": "附錄二（在戶外及空曠地方的工作安排參考指引），「一般人員」(b) 在工作時間內發出或生效，「極端情況」欄，第一點",
+      "main": "留在原來的地點或安全的地點",
+      "sub": ["而非立即啟程往工作地點上班"],
+      "quotes": [
+        {"source": "ld-cop-weather", "text": "在公布的指定期間留在原來的地點或安全的地點，而非立即啟程往工作地點上班。"}
+      ],
+      "en": {
+        "lines": ["To stay where they are or in a safe place", "instead of heading for work at workplaces immediately"],
+        "quotes": [
+          {"source": "ld-cop-weather-en", "text": "To stay where they are or in a safe place during the specified period of announcement, instead of heading for work at workplaces immediately."}
+        ]
+      }
+    },
+    "supervisor": {
+      "where": "附錄二，「一般人員」(b) 在工作時間內發出或生效，「極端情況」欄，第二點",
+      "fragments": ["立即暫停僱員在戶外及空曠地方的工作，並安排僱員到安全地方暫避"],
+      "quotes": [
+        {"source": "ld-cop-weather", "text": "主管應立即暫停僱員在戶外及空曠地方的工作，並安排僱員到安全地方暫避。"}
+      ],
+      "en": {
+        "fragments": ["immediately suspend the work of employees working outdoors and in exposed areas and arrange temporary shelter in a safe place for them"],
+        "quotes": [
+          {"source": "ld-cop-weather-en", "text": "Supervisors should immediately suspend the work of employees working outdoors and in exposed areas and arrange temporary shelter in a safe place for them."}
         ]
       }
     }

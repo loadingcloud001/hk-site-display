@@ -15,6 +15,10 @@ from app.site import ADJUST_MINUTES, ENVIRONMENTS, WORKLOADS
 ROOT = Path(__file__).resolve().parents[3]
 ACTIONS_PATH = ROOT / "config" / "display_actions.json"
 SCHEDULE_PATH = ROOT / "config" / "rest_schedule.json"
+# Every section that holds wording shown on screen. scripts/check_official_sources.py checks the same sections.
+# `rest` holds the English rest wording, filled in from config/rest_schedule.json; the others hold one entry per key.
+ENTRY_SECTIONS = ("weather", "supervisor", "notes", "extreme")
+SECTIONS = (*ENTRY_SECTIONS, "rest")
 LANGS = ("zh", "en")
 ZH_JOIN = "："
 EN_JOIN = ": "
@@ -35,6 +39,17 @@ def _norm(text):
 
 def _norm_en(text):
     return re.sub(r"\s+", " ", text or "").strip()
+
+
+def displayed(spec):
+    """Everything an entry puts on screen: its main line, its sub lines and its fragments."""
+    main = [spec["main"]] if "main" in spec else []
+    return [*main, *(spec.get("sub") or []), *(spec.get("fragments") or [])]
+
+
+def english_key(spec):
+    """Where an entry keeps its English: `lines` under an instruction (an entry with a main line), else `fragments`."""
+    return "lines" if "main" in spec else "fragments"
 
 
 def english_lines(spec):
@@ -133,21 +148,24 @@ def fragment_errors(actions, schedule=None):
             if not isinstance(fragment, str) or not norm(fragment) or not any(norm(fragment) in t for t in texts):
                 errors.append(f"{where}: {fragment!r} is not in the official text")
 
-    def check_en(where, spec, key):
+    def check_en(where, spec):
         if "en" not in spec:
             errors.append(f"{where}: say what to show in English (\"en\", or null when there is no official English)")
         elif spec["en"] is not None:
-            check(f"{where}.en", spec["en"].get(key) or [], spec["en"].get("quotes"), "en")
+            check(f"{where}.en", spec["en"].get(english_key(spec)) or [], spec["en"].get("quotes"), "en")
 
-    for key, spec in (actions.get("weather") or {}).items():
-        check(f"weather.{key}", [spec["main"], *spec.get("sub", [])], spec.get("quotes"), "zh")
-        check_en(f"weather.{key}", spec, "lines")
-    for key, spec in (actions.get("supervisor") or {}).items():
-        check(f"supervisor.{key}", spec.get("fragments") or [], spec.get("quotes"), "zh")
-        check_en(f"supervisor.{key}", spec, "fragments")
-    for key, spec in (actions.get("notes") or {}).items():
-        check(f"notes.{key}", spec.get("fragments") or [], spec.get("quotes"), "zh")
-        check_en(f"notes.{key}", spec, "fragments")
+    for key in actions:
+        if key != "sources" and key not in SECTIONS:
+            errors.append(f"{key}: unknown section, so its wording would never be checked (add it to SECTIONS)")
+    for section in ENTRY_SECTIONS:
+        for key, spec in (actions.get(section) or {}).items():
+            if section == "weather" and not spec.get("main"):
+                errors.append(f"{section}.{key}: no main instruction")
+            check(f"{section}.{key}", displayed(spec), spec.get("quotes"), "zh")
+            check_en(f"{section}.{key}", spec)
+    extreme = actions.get("extreme")
+    if extreme is not None and not ((extreme.get("display") or {}).get("main") and "supervisor" in extreme):
+        errors.append("extreme: needs display.main and supervisor")
 
     rest = actions.get("rest")
     if rest is not None:
@@ -184,3 +202,20 @@ def note_text(actions, key):
 
 def note_text_en(actions, key):
     return english_text(actions["notes"][key])
+
+
+def extreme_wording(actions):
+    """The 「極端情況」 lines: the instruction and its sub lines, and the supervisor line."""
+    spec = actions["extreme"]
+    return {
+        "main": spec["display"]["main"],
+        "sub": list(spec["display"].get("sub") or []),
+        "supervisor": ZH_JOIN.join(spec["supervisor"]["fragments"]),
+    }
+
+
+def extreme_english(actions):
+    """The official English of the 「極端情況」 lines: `lines` under the instruction ([] when there is none) and the
+    supervisor line (None when there is none)."""
+    spec = actions["extreme"]
+    return {"lines": english_lines(spec["display"]), "supervisor": english_text(spec["supervisor"])}

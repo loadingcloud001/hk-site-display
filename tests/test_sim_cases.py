@@ -43,7 +43,14 @@ REQUIRED = [
     "trades-indoor",
     "weather-old",
     "forecast-old",
+    "extreme",
+    "extreme-tc3",
+    "extreme-stack",
+    "extreme-ended",
 ]
+
+# 「極端情況」 has no official icon (AGENTS.md: never draw one). Its screen is text only: the notice takes the icon's place.
+TEXT_ONLY = {"extreme"}
 
 
 def test_catalog_covers_all_signals():
@@ -170,7 +177,7 @@ def test_typhoon_stack_lists_every_sign():
 
 
 def test_warning_cases_point_at_real_official_files():
-    skip_icon = {"none", "stale"}
+    skip_icon = {"none", "stale"} | TEXT_ONLY
     for case in list_cases():
         snap = case["snapshot"]
         if case["id"] in skip_icon:
@@ -201,6 +208,13 @@ def test_display_covers_every_sim_case():
                 continue
             if snap["tone"] != "idle":
                 missing.append(f"{case['id']}:normal-work-not-idle")
+            continue
+        if snap["display"]["mode"] == "extreme":
+            notice = snap.get("extreme") or {}
+            if snap["display"]["heroRel"] is not None:
+                missing.append(f"{case['id']}:extreme-with-an-icon")
+            if not (notice.get("nameZh") and notice.get("startZh") and notice.get("endZh")):
+                missing.append(f"{case['id']}:extreme-without-its-notice")
             continue
         highs = [s for s in snap["signals"] if s.get("impact") == "high" and s.get("rel")]
         if not highs and not (snap.get("display") or {}).get("heroRel"):
@@ -285,7 +299,8 @@ def test_every_case_has_english_names_and_lines_where_official_ones_exist():
         else:
             assert display["en"] and display["metaEn"] is None, case_id
         for line in snap["supervisor"]:
-            assert line["textEn"] and line["fromEn"], case_id
+            # 「極端情況」's line hides its trigger, which would repeat the name on the plate: no English name.
+            assert line["textEn"] and (line["fromEn"] or display["mode"] == "extreme"), case_id
 
 
 def test_preview_english_names_follow_the_live_feed_shape():
@@ -294,3 +309,50 @@ def test_preview_english_names_follow_the_live_feed_shape():
     lines = build_case("rain-amber-tc3")["supervisor"]
     assert [line["fromEn"] for line in lines] == ["Strong Wind Signal No. 3", "Amber Rainstorm Warning Signal"]
     assert build_case("trades-indoor")["restTiles"][0]["en"]["trades"] == "Bar-fixing worker"
+
+
+def test_extreme_conditions_cases():
+    alone = build_case("extreme")
+    assert alone["display"]["mode"] == "extreme" and alone["tone"] == "extreme"
+    assert (alone["extreme"]["startZh"], alone["extreme"]["endZh"]) == ("14:00", "16:00")
+    assert alone["signals"] == [] and alone["banner"] is None
+
+    started = build_case("extreme-tc3")
+    assert started["display"]["mode"] == "extreme"
+    assert [s["code"] for s in started["signals"]] == ["TC3"]
+    assert started["banner"]["textZh"] == "「極端情況」 生效"  # outranks 三號強風信號 發出 at the same minute
+    assert [line["text"] for line in started["supervisor"]] == [
+        "立即暫停僱員在戶外及空曠地方的工作，並安排僱員到安全地方暫避"
+    ]
+
+    stack = build_case("extreme-stack")
+    assert stack["display"]["mode"] == "extreme" and stack["restTiles"] == []
+    assert [s["code"] for s in stack["signals"]] == ["TC8NE", "WRAINB", "WL", "HSWW-amber"]
+
+    ended = build_case("extreme-ended")
+    assert ended["display"]["mode"] == "normal" and ended["extreme"] is None
+    assert ended["banner"] == {"time": "14:42", "textZh": "「極端情況」 結束", "kind": "cancel", "code": "EXTREME"}
+
+
+def test_extreme_conditions_apply_to_a_sites_preview_too():
+    site = {"siteId": "s7k2", "environment": "outdoor", "primaryTrades": [{"labelZh": "外牆", "workload": "heavy"}]}
+    snap = build_case("extreme", site)
+    assert snap["display"]["mode"] == "extreme" and snap["site"]["id"] == "s7k2"
+
+
+def test_extreme_conditions_english():
+    snap = build_case("extreme-tc3")
+    assert snap["display"]["en"] == [
+        "To stay where they are or in a safe place",
+        "instead of heading for work at workplaces immediately",
+    ]
+    assert snap["display"]["metaEn"] is None
+    assert snap["supervisor"] == [
+        {
+            "text": "立即暫停僱員在戶外及空曠地方的工作，並安排僱員到安全地方暫避",
+            "fromZh": "「極端情況」",
+            "textEn": "immediately suspend the work of employees working outdoors and in exposed areas and arrange "
+            "temporary shelter in a safe place for them",
+            "fromEn": None,
+        }
+    ]

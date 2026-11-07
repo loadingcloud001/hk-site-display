@@ -277,3 +277,23 @@ def test_job_summary_is_written_for_github_actions(offline, monkeypatch, tmp_pat
     text = summary.read_text(encoding="utf-8")
     assert "| [page](https://example.test/advice.htm) | 網頁 | 1/1 found | — | ✅ |" in text
     assert "### Problems" in text and "guide" in text
+
+
+def test_the_weekly_check_covers_every_section_the_screen_shows():
+    from app.actions import SECTIONS
+
+    assert cos.SECTIONS == SECTIONS
+    assert set(ACTIONS) - {"sources"} == set(cos.SECTIONS)
+    cited = {where for quotes in cos.quotes_by_source(ACTIONS).values() for _, places in quotes for where in places}
+    assert {"extreme.display", "extreme.supervisor"} <= cited
+
+
+def test_extreme_conditions_quotes_are_found_in_the_code_of_practice_as_extracted():
+    # Appendix 2, (b), the 「極端情況」 column, as pypdf extracts it from the May 2026 PDF: spaced-out characters.
+    page = (
+        "• 在公布的 指 定 期 間 留在 原 來 的 地 點\n或安全的地點 ， 而非立即啟程往工作\n地 點 上 班。\n"
+        "• 主管應立即暫停僱員在戶外及空曠\n地方的工作 ， 並安排僱員到安全地方\n暫 避。\n"
+    )
+    for part in ("display", "supervisor"):
+        quote = ACTIONS["extreme"][part]["quotes"][0]["text"]
+        assert cos.find_quote(cos.normalise(page), quote) == (True, None), part

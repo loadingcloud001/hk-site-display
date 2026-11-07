@@ -67,6 +67,15 @@ Each is a verbatim, contiguous part of the quoted official sentence. The quotes 
 | Signals 1 and 3 | Stop the operation of cranes, suspended working platforms, etc. |
 | Amber rain | Suspend the operation of suspended working platforms, slope works, etc. |
 
+**「極端情況」** (CoP Appendix 2, "General staff", (b) "Issued / in force within working hours", "Extreme conditions" column, bullets 1 and 2 on page 53, the same bullets as the Chinese):
+
+| Where | English shown |
+|---|---|
+| Under the instruction | To stay where they are or in a safe place / instead of heading for work at workplaces immediately |
+| Supervisor line | immediately suspend the work of employees working outdoors and in exposed areas and arrange temporary shelter in a safe place for them |
+
+As in Chinese, the instruction leaves out the announced period ("during the specified period of announcement", 在公布的指定期間), which the plate shows, and the supervisor line leaves out "Supervisors should" (主管應). 「極端情況」 is not an HKO warning, so it has no English name: the plate in place of its icon shows the Chinese name and the period, and its supervisor line hides its trigger, as in Chinese.
+
 **Heat stress** (guidance notes):
 
 | Where | English shown | Source in the guidance notes |
@@ -103,7 +112,7 @@ The rest wording is a template because the numbers live in `config/rest_schedule
 **`config/display_actions.json`.**
 
 - Every source has `"lang": "zh"` or `"en"`, and the six English sources are added (§3).
-- Every weather, supervisor and note entry has an `"en"` key: its English `lines` (weather) or `fragments` (supervisor, note), with their own `quotes`. `"en": null` means no official English sentence exists, and the screen shows none. The key is required, so a new entry cannot silently miss its English.
+- Every weather, supervisor, note and 「極端情況」 entry has an `"en"` key: its English `lines` (an instruction: weather, and 「極端情況」's `display`) or `fragments` (supervisor lines and notes), with their own `quotes`. `"en": null` means no official English sentence exists, and the screen shows none. The key is required, so a new entry cannot silently miss its English.
 - A new `rest` section holds the English rest templates and their quotes.
 
 **The guard** (`app/actions.py`, `tests/test_display_actions.py`):
@@ -116,10 +125,10 @@ The rest wording is a template because the numbers live in `config/rest_schedule
 
 | Field | Content |
 |---|---|
-| `display.en` | The English lines under the instruction: the warning's, or the normal day's rest lines. `[]` on heat-stress days, whose English is on the tiles |
-| `display.metaEn` | HKO's English warning or HSWW name, or `null` |
+| `display.en` | The English lines under the instruction: the warning's or 「極端情況」's, or the normal day's rest lines. `[]` on heat-stress days, whose English is on the tiles |
+| `display.metaEn` | HKO's English warning or HSWW name, or `null` (always for 「極端情況」) |
 | `restTiles[].en` | `trades`: the English names, or `null`. `lines`: the tile's English |
-| `supervisor[].textEn`, `fromEn` | The line's English and the warning's English name, either `null` when there is none |
+| `supervisor[].textEn`, `fromEn` | The line's English and the warning's English name, either `null` when there is none (`fromEn` always for 「極端情況」) |
 | `notesEn` | One per Chinese note, in the same order, `null` where there is none |
 | `site.languages` | Always present |
 
@@ -132,6 +141,7 @@ HKO's `warnsum` puts only the colour in `type` for rainstorm and fire danger war
 - **Weather and normal days:** the English lines go under the Chinese instruction as one block, a little smaller than the Chinese sub-line (Latin letters already look smaller than Chinese at the same size) and lighter. They are balanced when they wrap and never hyphenated, and a hyphenated word ("re-acclimate", "15-minute") never breaks at its hyphen. HKO's English warning name goes under the Chinese warning line.
 - **Tiles:** the English trade names go under the Chinese ones, in the tile's heading. The tile's English goes under its Chinese lines as one block: "45 mins rest" and "15 mins work" side by side when they fit, "Suspension of work", or the 2-hour baseline's one sentence, which covers both its Chinese lines. So the Chinese lines stay together, as on a Chinese-only site. An English trade name stays on one line when it fits and wraps inside itself only when it is wider than the tile. An earlier version put each English line under its own Chinese line. It was busier and taller: 65 % against 67 % for the busy test site's Amber day in landscape.
 - **Supervisor lines:** the English takes a row of its own in the same box, with the warning's English name after it.
+- **「極端情況」:** the English lines go under the Chinese instruction, below the plate that takes the icon's place. Its supervisor line has its English row, without a name.
 - **The icon gives up room first.** On a site that shows English, the large icon is smaller (landscape weather and normal days 26 % of the height instead of 34 %), so most screens fit without shrinking.
 - **The measured fit still applies.** The centre is scaled down as a whole when it is too tall, to no less than 60 %.
 - **English never takes the Chinese's room.** If the centre does not fit even at 60 %, the screen gives up English, lowest value first: the warning's English name and the note's English, then the supervisor lines' English, then all of it. With everything given up, the centre is no taller than on a Chinese-only site, because the icon is smaller too. New content or a new screen size starts again from nothing given up, and the measurement runs before paint. The rule is to shrink first and give up English only at the floor, because the English is official safety wording too, and the existing design already accepts 60 % on busy days.
@@ -161,10 +171,11 @@ Nothing runs into the bar or under the banner in any case, in either orientation
 - The weekly check (`scripts/check_official_sources.py`) downloads the English sources too and checks every English quote, including the rest wording. The two English LD PDFs are in the lock, so a change to either fails the check until a person has re-verified it.
 - The April checklist (main spec §9) now includes the English documents. Compare the English Appendix 4 and 4(a) with `config/rest_schedule.json` as well, and check the English trade names in site files when Appendix 1 changes.
 - Run on 2026-11-07: all 12 sources downloaded and every Chinese and English quote found. The two English PDFs were then added to the lock.
+- Run again on 2026-11-08 (Hong Kong time), after merging 「極端情況」: all 12 sources downloaded and all 37 quotes found, including the two new English ones. The Labour Department PDFs were unchanged, so the lock was not touched.
 
 ## 10. Testing
 
-- pytest, 299 tests (43 new). New:
+- pytest: 484 tests after merging master (supervisor alerts and 「極端情況」). New with this work: 4 for the warning names, 39 for the English line and 3 for 「極端情況」's English. New:
   - the guard: an English paraphrase, a joined-up word, a line break, a Chinese source cited for English and the reverse, a missing `"en"`, `null`, an empty list, and a missing or unknown `lang`;
   - the rest wording: every value the schedule can give, a schedule the quotes do not cover, a broken template, and the normal-day grouping;
   - site files: `languages` (valid, missing `"zh"`, unknown code, repeat, not a list) and `labelEn`;
@@ -172,7 +183,8 @@ Nothing runs into the bar or under the banner in any case, in either orientation
   - snapshots: a Chinese-only site gets no English field; weather, Pre-No. 8, heat and normal days in English; no English name rather than a guess;
   - every preview case: English never changes the Chinese, and every case has its English where an official one exists;
   - the API: names from HKO's English feed, a Chinese-only `?site=`, a failing English feed never affecting warnings or health, and the poller asking for `lang=en`;
-  - the source check: English sources, quotes and the rest section.
+  - the source check: English sources, quotes and the rest section;
+  - 「極端情況」: its English quotes, the English kept where the screen reads it (`lines` under the instruction, `fragments` for the supervisor line), and the preview cases' English.
 - Real Chrome (Playwright, by hand), every preview case at 1920×1080 and 1080×1920:
   - with English (demo site): nothing runs into the bar or under the banner, nothing leaves the screen or its tile, no text wider than its box, no overlap between lines, and no console errors;
   - Chinese-only (the demo site without `languages`): pixel-identical to the screen before this change in all 88 screens. A first pass differed in a few screens only where HKO's blinking "issuing" icons (two-frame GIFs) were caught on the other frame, or a web-font subset arrived late; each was identical when shot again. The new Chinese-only screenshot `docs/demo/amber-zh.png` is byte-identical to the old `amber.png`;
@@ -187,4 +199,6 @@ Nothing runs into the bar or under the banner in any case, in either orientation
 ## 12. Follow-ups
 
 - **The banner in English**, from HKO's English warning text, if sites ask for it.
-- **「極端情況」**, the worker phone page and supervisor alerts, as in the site-ready spec §12. Each should get its English under the same rule.
+- **English in supervisor alerts.** The alerts stay in Chinese, built from the screen's lines (supervisor alerts spec §12). English messages would follow the same rule.
+- **An English name for 「極端情況」** on the plate (the Code's "Extreme conditions"), if English sites ask for it. It would need its own quote, like any other wording.
+- **The worker phone page**, as in the site-ready spec §12, with its English under the same rule.

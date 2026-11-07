@@ -10,9 +10,29 @@ services:
       ENABLE_LIVE_POLLER: "true"
       # The site a screen without ?site= shows; empty means config/sites/demo-site.json.
       DEFAULT_SITE: "${DEFAULT_SITE:-}"
+      # The 「極端情況」 switch's admin key, from the untracked .env (kept in Bitwarden). Empty turns the switch off.
+      ADMIN_KEY: "${ADMIN_KEY:-}"
+      STATE_DIR: /app/extreme-state
+      # Supervisor alerts (docs/site-setup.md §8). Set the values in the server's untracked .env, never here.
+      # Without SMTP_HOST every message is only logged (dry run).
+      SMTP_HOST: "${SMTP_HOST:-}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_SECURITY: "${SMTP_SECURITY:-}"
+      SMTP_USER: "${SMTP_USER:-}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
+      ALERT_FROM: "${ALERT_FROM:-}"
+      ALERT_OPERATOR: "${ALERT_OPERATOR:-}"
+      ALERT_DRY_RUN: "${ALERT_DRY_RUN:-false}"
+      PUBLIC_URL: "${PUBLIC_URL:-}"
+      ALERT_STATE_FILE: /app/state/alerts.json
     volumes:
       # Site files are read from the server, so changing a site's trades needs a restart, not a rebuild.
       - ./config/sites:/app/config/sites:ro
+      # What each site's supervisors were last told, so a restart or a rebuild never sends a message again.
+      - alert-state:/app/state
+      # The 「極端情況」 switch, kept across restarts and rebuilds. A volume of its own, so clearing the alerts'
+      # state never switches it off.
+      - extreme-state:/app/extreme-state
     healthcheck:
       # 503 when the feed poller has stopped finishing its cycles.
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=5)"]
@@ -42,3 +62,7 @@ services:
     depends_on:
       - ingest
       - web
+
+volumes:
+  alert-state:
+  extreme-state:

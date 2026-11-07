@@ -18,3 +18,7 @@ Thumbs.db
 # Real site files live on the server only (docs/site-setup.md); only the demo is in git.
 config/sites/*
 !config/sites/demo-site.json
+
+# Local runs keep the service's state here; in Docker each part has its own volume:
+# what each site's supervisors were last told (alerts.json) and the 「極端情況」 switch (extreme.json, STATE_DIR).
+state/

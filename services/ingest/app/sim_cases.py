@@ -144,6 +144,13 @@ def _english(warnsum: dict) -> dict:
     return out
 
 
+def _extreme(started_ago: int, lasts: int = 120) -> dict:
+    """A 「極端情況」 announcement that took effect `started_ago` minutes before the preview clock."""
+    starts = SIM_NOW - timedelta(minutes=started_ago)
+    at = starts.isoformat(timespec="seconds")
+    return {"startsAt": at, "endsAt": (starts + timedelta(minutes=lasts)).isoformat(timespec="seconds"), "setAt": at}
+
+
 TC3_WARN = _warn("TC3", "熱帶氣旋警告信號", "三號強風信號")
 TC3_INFO = _info("WTCSGNL", "三號強風信號現正生效。", "TC3")
 
@@ -413,6 +420,42 @@ SPECS = [
     {"id": "weather-old", "labelZh": "天氣資料過舊", "group": "other", "rhrreadAgo": 120},
     {"id": "forecast-old", "labelZh": "預報資料過舊", "group": "other", "fndAgo": 13 * 60},
     {"id": "wind-old", "labelZh": "風速資料過舊", "group": "other", "windAgo": 45},
+    # 「極端情況」 is switched on by an operator; these cases carry the announcement the switch would record.
+    {"id": "extreme", "labelZh": "「極端情況」", "group": "extreme", "extreme": _extreme(45)},
+    {
+        # The usual way it starts: Signal 8 is replaced by Signal 3 and 「極端情況」 takes effect at the same time.
+        "id": "extreme-tc3",
+        "labelZh": "「極端情況」＋三號（剛生效）",
+        "group": "extreme",
+        "warnsum": _warn("TC3", "熱帶氣旋警告信號", "三號強風信號", minutes_ago=4),
+        "info": _info("WTCSGNL", "三號強風信號現正生效。", "TC3", minutes_ago=4),
+        "extreme": _extreme(4),
+    },
+    {
+        "id": "extreme-stack",
+        "labelZh": "「極端情況」＋八號＋黑雨＋山泥＋黃暑熱",
+        "group": "extreme",
+        "hsww": "hsww_amber_inforce.json",
+        "warnsum": _merge_warn(
+            _warn("TC8NE", "熱帶氣旋警告信號", "八號東北烈風或暴風信號"),
+            _warn("WRAINB", "暴雨警告信號", "黑色暴雨警告信號"),
+            _warn("WL", "山泥傾瀉警告", "山泥傾瀉警告"),
+        ),
+        "info": _merge_info(
+            _info("WTCSGNL", "八號東北烈風或暴風信號現正生效。", "TC8NE"),
+            _info("WRAIN", "黑色暴雨警告信號現正生效。", "WRAINB"),
+            _info("WL", "山泥傾瀉警告現正生效。"),
+        ),
+        "extreme": _extreme(30),
+    },
+    {
+        "id": "extreme-ended",
+        "labelZh": "「極端情況」（剛結束）",
+        "group": "extreme",
+        "warnsum": _warn("TC1", "熱帶氣旋警告信號", "一號戒備信號"),
+        "info": _info("WTCSGNL", "一號戒備信號現正生效。", "TC1"),
+        "extreme": _extreme(123),
+    },
 ]
 
 CASE_IDS = [s["id"] for s in SPECS]
@@ -478,6 +521,7 @@ def build_case(name: str, site: dict | None = None) -> dict:
         stale=bool(spec.get("stale")),
         wind=_wind(spec.get("windAgo", 6)),
         warnsum_en=_english(spec.get("warnsum")),
+        extreme=spec.get("extreme"),
     )
     if spec.get("stale"):
         snap["tone"] = "stale"

@@ -155,3 +155,91 @@ def test_normal_day_english_follows_the_chinese_grouping():
         "heavy to very heavy levels of physical work: at least a 15-minute rest break after every 2 hours of work",
         "light to moderate levels of physical work: a minimum of a 10-minute rest break after every 2 hours of work",
     ]
+
+
+def test_extreme_conditions_wording_is_verbatim_from_the_code_of_practice():
+    from app.actions import extreme_wording
+
+    spec = ACTIONS["extreme"]
+    assert {q["source"] for part in spec.values() for q in part["quotes"]} == {"ld-cop-weather"}
+    assert extreme_wording(ACTIONS) == {
+        "main": "留在原來的地點或安全的地點",
+        "sub": ["而非立即啟程往工作地點上班"],
+        "supervisor": "立即暫停僱員在戶外及空曠地方的工作，並安排僱員到安全地方暫避",
+    }
+    assert spec["display"]["quotes"][0]["text"] == "在公布的指定期間留在原來的地點或安全的地點，而非立即啟程往工作地點上班。"
+    assert spec["supervisor"]["quotes"][0]["text"] == "主管應立即暫停僱員在戶外及空曠地方的工作，並安排僱員到安全地方暫避。"
+
+
+@pytest.mark.parametrize(
+    ("part", "field", "value"),
+    [
+        ("display", "main", "留在安全的地點"),
+        ("display", "sub", ["不要上班"]),
+        ("supervisor", "fragments", ["暫停戶外工作"]),
+    ],
+)
+def test_extreme_conditions_paraphrase_is_rejected(part, field, value):
+    bad = copy.deepcopy(ACTIONS)
+    bad["extreme"][part][field] = value
+    assert any(e.startswith(f"extreme.{part}:") for e in fragment_errors(bad))
+    with pytest.raises(ValueError):
+        validate_actions(bad)
+
+
+def test_a_section_the_check_does_not_know_is_rejected():
+    bad = copy.deepcopy(ACTIONS)
+    bad["announcements"] = {"x": {"main": "停工", "quotes": []}}
+    assert any("announcements: unknown section" in e for e in fragment_errors(bad))
+
+
+def test_every_section_with_wording_is_checked():
+    from app.actions import ENTRY_SECTIONS, SECTIONS
+
+    assert set(ACTIONS) - {"sources"} == set(SECTIONS)
+    unrelated_en = [{"source": "ld-cop-weather-en", "text": "An unrelated sentence."}]
+    for section in ENTRY_SECTIONS:
+        for key in ACTIONS[section]:
+            bad = copy.deepcopy(ACTIONS)
+            bad[section][key]["quotes"] = [{"source": "ld-cop-weather", "text": "完全無關的句子。"}]
+            assert any(e.startswith(f"{section}.{key}:") for e in fragment_errors(bad)), f"{section}.{key}"
+            if ACTIONS[section][key]["en"] is not None:
+                bad = copy.deepcopy(ACTIONS)
+                bad[section][key]["en"]["quotes"] = unrelated_en
+                assert any(e.startswith(f"{section}.{key}.en:") for e in fragment_errors(bad)), f"{section}.{key}.en"
+    for part in ("workloads", "tile", "normal"):
+        bad = copy.deepcopy(ACTIONS)
+        bad["rest"][part]["en"]["quotes"] = [{"source": "ld-gn-heat-en", "text": "An unrelated sentence."}]
+        assert any(e.startswith(f"rest.{part}.") for e in fragment_errors(bad)), f"rest.{part}"
+
+
+def test_extreme_conditions_english_is_verbatim_from_the_english_code_of_practice():
+    from app.actions import extreme_english
+
+    spec = ACTIONS["extreme"]
+    assert {q["source"] for part in spec.values() for q in part["en"]["quotes"]} == {"ld-cop-weather-en"}
+    assert extreme_english(ACTIONS) == {
+        "lines": ["To stay where they are or in a safe place", "instead of heading for work at workplaces immediately"],
+        "supervisor": "immediately suspend the work of employees working outdoors and in exposed areas and arrange "
+        "temporary shelter in a safe place for them",
+    }
+    assert spec["display"]["en"]["quotes"][0]["text"] == (
+        "To stay where they are or in a safe place during the specified period of announcement, instead of heading "
+        "for work at workplaces immediately."
+    )
+    assert spec["supervisor"]["en"]["quotes"][0]["text"] == (
+        "Supervisors should immediately suspend the work of employees working outdoors and in exposed areas and "
+        "arrange temporary shelter in a safe place for them."
+    )
+
+
+def test_english_must_be_kept_where_the_screen_reads_it():
+    # Lines under an instruction (an entry with a main line), fragments for a supervisor line or a note.
+    bad = copy.deepcopy(ACTIONS)
+    en = bad["extreme"]["display"]["en"]
+    en["fragments"] = en.pop("lines")
+    assert any("extreme.display.en: nothing to show" in e for e in fragment_errors(bad))
+    bad = copy.deepcopy(ACTIONS)
+    en = bad["extreme"]["supervisor"]["en"]
+    en["lines"] = en.pop("fragments")
+    assert any("extreme.supervisor.en: nothing to show" in e for e in fragment_errors(bad))
