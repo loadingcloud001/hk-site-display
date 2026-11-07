@@ -392,8 +392,12 @@ html.gallery-page #root {
   gap: 0.8cqw;
 }
 
+/* HKO draws many weather icons in white for its own sky-blue backgrounds: every cloud, the stars, and
+   乾燥, 潮濕, 霧, 薄霧 and 大風. On the cream plate they vanish, so weather icons sit on sky blue instead.
+   The icons themselves are unchanged. */
 .wx .plate {
   padding: 0.5cqh;
+  background: #3f7fc0;
 }
 
 .wx .plate img {
