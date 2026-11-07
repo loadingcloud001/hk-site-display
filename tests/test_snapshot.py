@@ -140,3 +140,12 @@ def test_banner_shows_then_hides_when_stale():
     now = datetime(2024, 7, 14, 14, 45, tzinfo=HKT)
     assert build(hsww_raw=load("hsww_amber_inforce.json"), now=now)["banner"]["textZh"] == "黃色工作暑熱警告 生效"
     assert build(hsww_raw=load("hsww_amber_inforce.json"), now=now, stale=True)["banner"] is None
+
+
+def test_rainstorm_meta_and_supervisor_source_name_the_whole_warning():
+    black = build(warnsum=load("warnsum_wrainb.json"))
+    assert black["display"]["main"] == "停止戶外作業"
+    assert black["display"]["meta"] == "黑色暴雨警告信號 · 00:05 發出"
+    assert black["hko"]["headlineZh"] == "黑色暴雨警告信號"
+    amber = build(warnsum={"WRAIN": {"name": "暴雨警告信號", "code": "WRAINA", "type": "黃色", "actionCode": "ISSUE"}})
+    assert amber["supervisor"] == [{"text": "停止操作吊船、進行斜坡工程", "fromZh": "黃色暴雨警告信號"}]

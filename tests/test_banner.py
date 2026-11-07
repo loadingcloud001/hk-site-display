@@ -50,6 +50,13 @@ def test_warnsum_issue_and_cancel():
     assert banner(events=[event("CANCEL", "ISSUE", 1, "", "熱帶氣旋警告信號")])["textZh"] == "熱帶氣旋警告信號 取消"
 
 
+def test_rainstorm_banner_names_the_whole_warning():
+    # The live feed's `type` is only the colour.
+    issued = banner(events=[event("WRAINR", "ISSUE", 2, "紅色", "暴雨警告信號")])
+    assert issued["textZh"] == "紅色暴雨警告信號 發出"
+    assert banner(events=[event("WRAINB", "CANCEL", 4, "黑色", "暴雨警告信號")])["textZh"] == "黑色暴雨警告信號 取消"
+
+
 def test_extend_update_reissue_ignored():
     for action in ("EXTEND", "UPDATE", "REISSUE"):
         assert banner(events=[event("WTS", action, 1, "雷暴警告")]) is None

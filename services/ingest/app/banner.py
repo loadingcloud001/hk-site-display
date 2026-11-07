@@ -1,7 +1,7 @@
 """Change banner: 10 minutes after a warning is issued or cancelled. Stateless by design."""
 from datetime import timedelta
 
-from app.hko import PRE8_NAME
+from app.hko import PRE8_NAME, warning_name
 from app.weather import HKT, parse_time
 
 BANNER_AFTER = timedelta(minutes=10)
@@ -30,7 +30,7 @@ def build_banner(hsww, events, info, now, rank, stale=False):
             candidates.append((rank("HSWW"), at, "cancel", "HSWW", f"{HSWW_NAME} 取消"))
     for event in events:
         code, action = event["code"], event["actionCode"]
-        label = event["type"] or event["name"]
+        label = warning_name(event)
         if code == "CANCEL" or action == "CANCEL":
             at = parse_time(event.get("updateTime") or event.get("issueTime"))
             name = (event["name"] or TC_SIGNAL_NAME) if code == "CANCEL" else label

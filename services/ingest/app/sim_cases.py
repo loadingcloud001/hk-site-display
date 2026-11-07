@@ -60,7 +60,9 @@ def _fnd(minutes_ago: int) -> dict:
     return raw
 
 
-def _warn(code: str, name: str, type_: str, minutes_ago: int = OLD, action: str = "ISSUE") -> dict:
+def _warn(code: str, name: str, type_: str = "", minutes_ago: int = OLD, action: str = "ISSUE") -> dict:
+    """A warnsum entry shaped like HKO's live feed: `type` is the signal's name for tropical cyclone signals, only
+    the colour for rainstorm and fire danger warnings, and absent for the others."""
     if code.startswith("TC"):
         key = "WTCSGNL"
     elif code.startswith("WRAIN"):
@@ -70,7 +72,10 @@ def _warn(code: str, name: str, type_: str, minutes_ago: int = OLD, action: str 
     else:
         key = code
     at = _ago(minutes_ago)
-    return {key: {"name": name, "code": code, "actionCode": action, "type": type_, "issueTime": at, "updateTime": at}}
+    entry = {"name": name, "code": code, "actionCode": action, "issueTime": at, "updateTime": at}
+    if type_:
+        entry["type"] = type_
+    return {key: entry}
 
 
 def _merge_warn(*parts: dict) -> dict:
@@ -162,49 +167,49 @@ SPECS = [
         "id": "rain-amber",
         "labelZh": "黃色暴雨",
         "group": "rain",
-        "warnsum": _warn("WRAINA", "暴雨警告信號", "黃色暴雨警告信號"),
+        "warnsum": _warn("WRAINA", "暴雨警告信號", "黃色"),
         "info": _info("WRAIN", "黃色暴雨警告信號現正生效。", "WRAINA"),
     },
     {
         "id": "rain-red",
         "labelZh": "紅色暴雨",
         "group": "rain",
-        "warnsum": _warn("WRAINR", "暴雨警告信號", "紅色暴雨警告信號"),
+        "warnsum": _warn("WRAINR", "暴雨警告信號", "紅色"),
         "info": _info("WRAIN", "紅色暴雨警告信號現正生效。", "WRAINR"),
     },
     {
         "id": "rain-black",
         "labelZh": "黑色暴雨",
         "group": "rain",
-        "warnsum": _warn("WRAINB", "暴雨警告信號", "黑色暴雨警告信號"),
+        "warnsum": _warn("WRAINB", "暴雨警告信號", "黑色"),
         "info": _info("WRAIN", "黑色暴雨警告信號現正生效。", "WRAINB"),
     },
     {
         "id": "thunderstorm",
         "labelZh": "雷暴",
         "group": "other",
-        "warnsum": _warn("WTS", "雷暴警告", "雷暴警告"),
+        "warnsum": _warn("WTS", "雷暴警告"),
         "info": _info("WTS", "雷暴警告現正生效。"),
     },
     {
         "id": "landslip",
         "labelZh": "山泥傾瀉",
         "group": "other",
-        "warnsum": _warn("WL", "山泥傾瀉警告", "山泥傾瀉警告"),
+        "warnsum": _warn("WL", "山泥傾瀉警告"),
         "info": _info("WL", "山泥傾瀉警告現正生效。"),
     },
     {
         "id": "vhot",
         "labelZh": "酷熱天氣",
         "group": "other",
-        "warnsum": _warn("WHOT", "酷熱天氣警告", "酷熱天氣警告"),
+        "warnsum": _warn("WHOT", "酷熱天氣警告"),
         "info": _info("WHOT", "酷熱天氣警告現正生效。"),
     },
     {
         "id": "monsoon",
         "labelZh": "強烈季候風",
         "group": "other",
-        "warnsum": _warn("WMSGNL", "強烈季候風信號", "強烈季候風信號"),
+        "warnsum": _warn("WMSGNL", "強烈季候風信號"),
         "info": _info("WMSGNL", "強烈季候風信號現正生效。"),
     },
     {
@@ -227,7 +232,7 @@ SPECS = [
         "labelZh": "黃暑熱＋酷熱",
         "group": "combo",
         "hsww": "hsww_amber_inforce.json",
-        "warnsum": _warn("WHOT", "酷熱天氣警告", "酷熱天氣警告"),
+        "warnsum": _warn("WHOT", "酷熱天氣警告"),
         "info": _info("WHOT", "酷熱天氣警告現正生效。"),
     },
     {
@@ -235,7 +240,7 @@ SPECS = [
         "labelZh": "黃暑熱＋雷暴",
         "group": "combo",
         "hsww": "hsww_amber_inforce.json",
-        "warnsum": _warn("WTS", "雷暴警告", "雷暴警告"),
+        "warnsum": _warn("WTS", "雷暴警告"),
         "info": _info("WTS", "雷暴警告現正生效。"),
     },
     {
@@ -259,7 +264,7 @@ SPECS = [
         "labelZh": "黑雨＋黃暑熱",
         "group": "combo",
         "hsww": "hsww_amber_inforce.json",
-        "warnsum": _warn("WRAINB", "暴雨警告信號", "黑色暴雨警告信號"),
+        "warnsum": _warn("WRAINB", "暴雨警告信號", "黑色"),
         "info": _info("WRAIN", "黑色暴雨警告信號現正生效。", "WRAINB"),
     },
     {
@@ -277,8 +282,8 @@ SPECS = [
         "hsww": "hsww_amber_inforce.json",
         "warnsum": _merge_warn(
             _warn("TC8NE", "熱帶氣旋警告信號", "八號東北烈風或暴風信號"),
-            _warn("WRAINB", "暴雨警告信號", "黑色暴雨警告信號"),
-            _warn("WL", "山泥傾瀉警告", "山泥傾瀉警告"),
+            _warn("WRAINB", "暴雨警告信號", "黑色"),
+            _warn("WL", "山泥傾瀉警告"),
         ),
         "info": _merge_info(
             _info("WTCSGNL", "八號東北烈風或暴風信號現正生效。", "TC8NE"),
@@ -291,42 +296,42 @@ SPECS = [
         "id": "cold",
         "labelZh": "寒冷天氣",
         "group": "other",
-        "warnsum": _warn("WCOLD", "寒冷天氣警告", "寒冷天氣警告"),
+        "warnsum": _warn("WCOLD", "寒冷天氣警告"),
         "info": _info("WCOLD", "寒冷天氣警告現正生效。"),
     },
     {
         "id": "fire-yellow",
         "labelZh": "黃色火災危險",
         "group": "other",
-        "warnsum": _warn("WFIREY", "火災危險警告", "黃色火災危險警告"),
+        "warnsum": _warn("WFIREY", "火災危險警告", "黃色"),
         "info": _info("WFIRE", "黃色火災危險警告現正生效。", "WFIREY"),
     },
     {
         "id": "fire-red",
         "labelZh": "紅色火災危險",
         "group": "other",
-        "warnsum": _warn("WFIRER", "火災危險警告", "紅色火災危險警告"),
+        "warnsum": _warn("WFIRER", "火災危險警告", "紅色"),
         "info": _info("WFIRE", "紅色火災危險警告現正生效。", "WFIRER"),
     },
     {
         "id": "frost",
         "labelZh": "霜凍",
         "group": "other",
-        "warnsum": _warn("WFROST", "霜凍警告", "霜凍警告"),
+        "warnsum": _warn("WFROST", "霜凍警告"),
         "info": _info("WFROST", "霜凍警告現正生效。"),
     },
     {
         "id": "ntfl",
         "labelZh": "新界北部水浸",
         "group": "other",
-        "warnsum": _warn("WFNTSA", "新界北部水浸特別報告", "新界北部水浸特別報告"),
+        "warnsum": _warn("WFNTSA", "新界北部水浸特別報告"),
         "info": _info("WFNTSA", "新界北部水浸特別報告現正生效。"),
     },
     {
         "id": "tsunami",
         "labelZh": "海嘯",
         "group": "other",
-        "warnsum": _warn("WTMW", "海嘯警告", "海嘯警告"),
+        "warnsum": _warn("WTMW", "海嘯警告"),
         "info": _info("WTMW", "海嘯警告現正生效。"),
     },
     {"id": "amber-new", "labelZh": "黃暑熱（剛生效）", "group": "hsww", "hsww": "hsww_amber_inforce.json", "hswwAgo": 3},
@@ -342,13 +347,13 @@ SPECS = [
         "id": "rain-black-cancel",
         "labelZh": "黑雨（剛取消）",
         "group": "rain",
-        "warnsum": _warn("WRAINB", "暴雨警告信號", "黑色暴雨警告信號", minutes_ago=3, action="CANCEL"),
+        "warnsum": _warn("WRAINB", "暴雨警告信號", "黑色", minutes_ago=3, action="CANCEL"),
     },
     {
         "id": "rain-amber-tc3",
         "labelZh": "黃雨＋三號",
         "group": "combo",
-        "warnsum": _merge_warn(_warn("WRAINA", "暴雨警告信號", "黃色暴雨警告信號"), TC3_WARN),
+        "warnsum": _merge_warn(_warn("WRAINA", "暴雨警告信號", "黃色"), TC3_WARN),
     },
     {
         "id": "trades-indoor",

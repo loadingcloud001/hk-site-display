@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from app.actions import load_actions, note_text, validate_actions, weather_by_code
 from app.banner import build_banner
 from app.heat import build_rest_tiles, normal_rest_lines
-from app.hko import PRE8_NAME, active_codes, parse_warning_info, parse_warnsum, parse_warnsum_events
+from app.hko import PRE8_NAME, active_codes, parse_warning_info, parse_warnsum, parse_warnsum_events, warning_name
 from app.hsww import parse_hkhi_icon
 from app.priority import classify
 from app.rest import compute_rest
@@ -55,10 +55,9 @@ def is_high_impact(code: str, kind: str = "") -> bool:
 
 
 def weather_caption(warnings: list, info: list) -> str:
-    """Canteen line: warnsum type/name, never bulletin contents[0]."""
+    """Canteen line: the warning's official name from warnsum, never bulletin contents[0]."""
     if warnings:
-        w = sorted(warnings, key=lambda item: code_rank(item.get("code") or ""))[0]
-        return (w.get("type") or w.get("name") or "").strip()
+        return warning_name(sorted(warnings, key=lambda item: code_rank(item.get("code") or ""))[0])
     for item in info or []:
         if item.get("code") == "WTCPRE8" or item.get("subtype") == "WTCPRE8":
             return PRE8_CAPTION
@@ -88,7 +87,7 @@ def build_signals(hsww: dict, warnings: list, codes: list, icons_map: dict) -> l
             {
                 "code": code,
                 "rel": icons_map.get(code),
-                "labelZh": (w.get("type") or w.get("name") or "").strip(),
+                "labelZh": warning_name(w),
                 "kind": "weather",
                 "impact": "high" if is_high_impact(code, "weather") else "low",
             }
@@ -114,7 +113,7 @@ def _weather_display(code, warnings, info, icons_map, codes):
         hero = icons_map.get(signal) if signal else None
     else:
         warning = next((w for w in warnings if w["code"] == code), {})
-        name = (warning.get("type") or warning.get("name") or "").strip()
+        name = warning_name(warning)
         at = warning.get("issueTime")
         hero = icons_map.get(code)
     clock = _clock(at)

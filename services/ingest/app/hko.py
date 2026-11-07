@@ -1,7 +1,27 @@
-# Official name, HKO Open Data API documentation (TC), warningStatementCode WTCPRE8.
+# Official names, HKO Open Data API documentation (TC and EN), warningStatementCode WTCPRE8.
 PRE8_NAME = "預警八號熱帶氣旋警告信號之特別報告"
+PRE8_NAME_EN = "Pre-no.8 Special Announcement"
 
 ACTIVE = {"ISSUE", "REISSUE", "EXTEND", "UPDATE"}
+
+# For these warnings warnsum's `type` is only the colour (黃色, Amber) and `name` is the warning (暴雨警告信號,
+# Rainstorm Warning Signal); the official name is the two together (HKO Open Data API documentation, warnsum).
+COLOUR_TYPED = ("WRAIN", "WFIRE")
+
+
+def warning_name(item, lang="zh"):
+    """Official name of a warnsum entry, in the feed's language.
+
+    Tropical cyclone signals: `type` (八號東北烈風或暴風信號). Rainstorm and fire danger warnings: colour and
+    name (黃色暴雨警告信號, Amber Rainstorm Warning Signal). Anything else: `name`.
+    """
+    name = (item.get("name") or "").strip()
+    kind = (item.get("type") or "").strip()
+    if not kind:
+        return name
+    if (item.get("code") or "").startswith(COLOUR_TYPED) and name and name not in kind:
+        return f"{kind} {name}" if lang == "en" else f"{kind}{name}"
+    return kind
 
 
 def parse_warnsum(raw: dict) -> list[dict]:
