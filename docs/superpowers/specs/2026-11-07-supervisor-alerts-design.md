@@ -58,7 +58,7 @@ Every line comes from the screen:
 | Line | Source |
 |---|---|
 | `地盤乙 · 00:19` | the site file's `nameZh` (else its `siteId`), and the time the message was made |
-| `強烈季候風信號 發出` | the change, worded like the screen's change banner: the warning's name from `signals`, then `發出` or `取消` (HKO), or `生效` or `取消` (heat stress, the Labour Department's own verbs) |
+| `強烈季候風信號 發出` | the change, worded like the screen's change banner: the warning's official name from `signals` (for rainstorm and fire danger warnings, the colour and the name together, such as 紅色火災危險警告, because HKO's live `type` is only the colour), then `發出` or `取消` (HKO), or `生效` or `取消` (heat stress, the Labour Department's own verbs) |
 | `告示屏：` and the lines under it | the centre of the screen, in its order (a table below lists them) |
 | `現正生效：…` | the name of every warning in force (`signals`): the bar's icons, in words. 現正生效 is HKO's own phrase |
 | the address | `PUBLIC_URL/?site=<siteId>`: the screen itself |
@@ -244,8 +244,8 @@ A setting that cannot work keeps the service in dry run and is reported in healt
 
 ## 10. Testing
 
-- pytest, 334 tests in all, 78 of them new:
-  - change detection for each kind (every heat-stress level; issue and cancel; signals changing code; rain Amber, Red and Black; Pre-8 announced, and ended under No. 8; extensions, updates and reissues ignored);
+- pytest, 339 tests in all, 79 of them new:
+  - change detection for each kind (every heat-stress level; issue and cancel; signals changing code; rain Amber, Red and Black; rainstorm and fire danger warnings named in full from HKO's live shape, where `type` is only the colour; Pre-8 announced, and ended under No. 8; extensions, updates and reissues ignored);
   - several changes in one message, in order; one text per site;
   - only what the screen shows (above);
   - glitches: one bad fetch, flapping on every fetch, a failed fetch never counted twice;
@@ -266,6 +266,28 @@ A setting that cannot work keeps the service in dry run and is reported in healt
   - the demo site, new to the file, remembered without a message;
   - health 503 naming `config/sites/s7k2.json: alerts.email[2]` and nothing else;
   - `--test s7k2` and `--test operator` logged their messages and left the state file unchanged; `--test` with an unknown site exits 1 at once.
+- **Again after the warning-name fix** (8 November 2026, 01:58 HKT, Strong Monsoon Signal still in force), once master was merged in:
+  - the same live dry run gave the operator's recovery message after 22 s and the second site's message after 73 s;
+  - no rainstorm or fire danger warning was in force, so the same service also ran on the live feeds with two `warnsum` entries added in HKO's live shape (`type` only the colour): Black Rainstorm and Red Fire Danger. Both sites' messages named each warning in full:
+
+  ```
+  Subject: 【地盤乙】黑色暴雨警告信號 發出 +1
+
+  地盤乙 · 01:59
+  黑色暴雨警告信號 發出
+  紅色火災危險警告 發出
+
+  告示屏：
+  停止戶外作業
+  並到安全地方暫避
+  黑色暴雨警告信號 · 01:58 發出
+
+  現正生效：黑色暴雨警告信號 · 強烈季候風信號 · 紅色火災危險警告
+
+  https://hksite-display.loadingtechnology.app/?site=s7k2
+  ```
+
+  When the fire danger warning was then cancelled (`actionCode` `CANCEL`, as HKO marks it), each site got one message, `紅色火災危險警告 取消`, with `現正生效：黑色暴雨警告信號 · 強烈季候風信號`. Nothing failed, and health was 503 only for the scratch site's bad address.
 
 ## 11. Rollout
 
