@@ -20,16 +20,73 @@ function Plate({ rel, className }: { rel: string; className?: string }) {
   );
 }
 
-// A wrapped tile label breaks between trade names, never inside one, and "+N" stays with the name before it.
-function Trades({ label }: { label: string }) {
+// A hyphenated word ("re-acclimate", "15-minute") never breaks at its hyphen, which would read as two words. The
+// text itself is unchanged.
+function Words({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(/(\S+-\S+)/).map((part, i) =>
+        i % 2 ? (
+          <span key={i} className="nb">
+            {part}
+          </span>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
+// Official English, on sites whose file asks for it ("languages": ["zh", "en"]). The server sends only words quoted
+// from LD's and HKO's English documents and feeds; nothing is translated here, and a missing line shows nothing.
+function En({ text, className }: { text?: string | null; className?: string }) {
+  if (!text) return null;
+  return (
+    <div className={className ? `en ${className}` : "en"} lang="en">
+      <Words text={text} />
+    </div>
+  );
+}
+
+// A wrapped label breaks between trade names, never inside one, and "+N" stays with the name before it.
+function Names({ label }: { label: string }) {
   const names = label.split(" · ");
   return (
-    <div className="trades">
+    <>
       {names.map((name, i) => (
         <Fragment key={`${i}-${name}`}>
           {i > 0 && " "}
           <span className="tn">{i < names.length - 1 ? `${name}\u00A0·` : name}</span>
         </Fragment>
+      ))}
+    </>
+  );
+}
+
+function Trades({ label, en }: { label: string; en?: string | null }) {
+  return (
+    <div className="trades">
+      <Names label={label} />
+      {en && (
+        <div className="trades-en" lang="en">
+          <Names label={en} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// A tile's English goes under its Chinese lines, as one block: "45 mins rest" and "15 mins work" side by side when
+// they fit, "Suspension of work", or the 2-hour baseline's one sentence.
+function TileEn({ lines }: { lines?: string[] }) {
+  if (!lines?.length) return null;
+  return (
+    <div className="tile-en" lang="en">
+      {lines.map((line) => (
+        <div key={line} className="en">
+          <Words text={line} />
+        </div>
       ))}
     </div>
   );
@@ -39,19 +96,21 @@ function Tile({ tile }: { tile: RestTile }) {
   if (tile.kind === "suspend") {
     return (
       <div className="tile stop">
-        <Trades label={tile.tradesZh} />
+        <Trades label={tile.tradesZh} en={tile.en?.trades} />
         <div className="big big-word">暫停工作</div>
         <div className="small" />
+        <TileEn lines={tile.en?.lines} />
       </div>
     );
   }
   return (
     <div className="tile">
-      <Trades label={tile.tradesZh} />
+      <Trades label={tile.tradesZh} en={tile.en?.trades} />
       <div className="big">
         休息<b>{tile.rest}</b>分鐘
       </div>
       <div className="small">{tile.kind === "baseline" ? `每 ${tile.perHours} 小時` : `工作 ${tile.work} 分鐘`}</div>
+      <TileEn lines={tile.en?.lines} />
     </div>
   );
 }
@@ -117,33 +176,60 @@ function useFit(stage: RefObject<HTMLDivElement>, content: string): number {
 
 // Breathing room kept between the centre content and the bar, in CSS pixels.
 const CENTER_MARGIN = 8;
+// The smallest the centre is scaled; below this the Chinese gets too small to read from the gate.
+const MIN_SCALE = 0.6;
+// The English the centre gives up, lowest value first, when it does not fit even at MIN_SCALE: 1 the warning's
+// and the note's English, 2 also the supervisor lines', 3 all of it (kiosk.css, data-en-shed). The Chinese always
+// keeps its room: with everything given up, the centre is no taller than on a Chinese-only site.
+const EN_SHED = 3;
 
 // Scale the centre down when its content is taller than the room left by the bar (portrait heat-stress days with
-// a supervisor line, six tiles, two lines...), so it never runs over the warning icons. Nothing is hidden: every
+// a supervisor line, six tiles, two lines...), so it never runs over the warning icons. No Chinese is hidden: every
 // line in the centre is official wording. A transform does not change the measured size, so this cannot loop.
-function useCenterScale(box: RefObject<HTMLDivElement>, inner: RefObject<HTMLDivElement>): number {
+function useCenterScale(
+  box: RefObject<HTMLDivElement>,
+  inner: RefObject<HTMLDivElement>,
+  content: string,
+  english: boolean,
+): { scale: number; shed: number } {
   const [scale, setScale] = useState(1);
+  const [size, setSize] = useState("");
+  const [given, setGiven] = useState({ key: "", shed: 0 });
   const [, setTick] = useState(0);
+  // What was given up belongs to the content and size it was measured for; anything new starts from nothing.
+  const key = `${size}|${content}`;
+  const shed = given.key === key ? given.shed : 0;
   useLayoutEffect(() => {
     const outer = box.current;
-    const content = inner.current;
-    if (!outer || !content) return;
+    const fit = inner.current;
+    if (!outer || !fit) return;
     const style = getComputedStyle(outer);
     const room = outer.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - CENTER_MARGIN;
-    const need = content.offsetHeight;
-    const next = need > room && room > 0 ? Math.max(0.6, Math.floor((room / need) * 100) / 100) : 1;
+    const need = fit.offsetHeight;
+    if (english && shed < EN_SHED && room > 0 && need * MIN_SCALE > room) {
+      setGiven({ key, shed: shed + 1 });
+      return;
+    }
+    const next = need > room && room > 0 ? Math.max(MIN_SCALE, Math.floor((room / need) * 100) / 100) : 1;
     if (Math.abs(next - scale) > 0.005) setScale(next);
   });
   useEffect(() => {
     const outer = box.current;
-    const content = inner.current;
-    if (!outer || !content || typeof ResizeObserver === "undefined") return;
+    const fit = inner.current;
+    if (!outer || !fit || typeof ResizeObserver === "undefined") return;
+    const outerWatch = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setSize(`${Math.round(width)}x${Math.round(height)}`);
+    });
     const watch = new ResizeObserver(() => setTick((t) => t + 1));
-    watch.observe(outer);
-    watch.observe(content);
-    return () => watch.disconnect();
+    outerWatch.observe(outer);
+    watch.observe(fit);
+    return () => {
+      outerWatch.disconnect();
+      watch.disconnect();
+    };
   }, [box, inner]);
-  return scale;
+  return { scale, shed };
 }
 
 type ScreenProps = {
@@ -166,12 +252,15 @@ export function Screen({ snap, clock, date, layout, simbar, stale: staleProp }: 
   const wind = snap.wind;
   const forecast = snap.forecast;
   const supervisor = snap.supervisor || [];
+  const english = Boolean(snap.site?.languages?.includes("en"));
+  const enLines = display.en || [];
   const rail = railSignals(snap);
   const stageRef = useRef<HTMLDivElement>(null);
   const centerRef = useRef<HTMLDivElement>(null);
   const fitRef = useRef<HTMLDivElement>(null);
   const drop = useFit(stageRef, JSON.stringify([rail.map((s) => s.code), weather, wind, forecast]));
-  const scale = useCenterScale(centerRef, fitRef);
+  const centre = JSON.stringify([display, snap.restTiles, snap.notes, snap.notesEn, supervisor]);
+  const { scale, shed } = useCenterScale(centerRef, fitRef, centre, english);
 
   return (
     <div
@@ -180,6 +269,8 @@ export function Screen({ snap, clock, date, layout, simbar, stale: staleProp }: 
       data-tone={snap.tone || "idle"}
       data-mode={mode}
       data-sup={supervisor.length || undefined}
+      data-en={english || undefined}
+      data-en-shed={shed || undefined}
       data-drop={drop || undefined}
       data-layout={layout}
     >
@@ -212,10 +303,12 @@ export function Screen({ snap, clock, date, layout, simbar, stale: staleProp }: 
                 ))}
               </div>
               {display.meta && <div className="meta">{display.meta}</div>}
-              {(snap.notes || []).map((note) => (
-                <div key={note} className="note">
-                  {note}
-                </div>
+              <En text={display.metaEn} className="meta-en" />
+              {(snap.notes || []).map((note, i) => (
+                <Fragment key={note}>
+                  <div className="note">{note}</div>
+                  <En text={snap.notesEn?.[i]} className="note-en" />
+                </Fragment>
               ))}
             </>
           ) : (
@@ -228,7 +321,17 @@ export function Screen({ snap, clock, date, layout, simbar, stale: staleProp }: 
                   {line}
                 </div>
               ))}
+              {enLines.length > 0 && (
+                <div className="en-lines" lang="en">
+                  {enLines.map((line) => (
+                    <div key={line} className="en">
+                      <Words text={line} />
+                    </div>
+                  ))}
+                </div>
+              )}
               {display.meta && <div className="meta">{display.meta}</div>}
+              <En text={display.metaEn} className="meta-en" />
             </>
           )}
           {supervisor.map((line) => (
@@ -236,6 +339,19 @@ export function Screen({ snap, clock, date, layout, simbar, stale: staleProp }: 
               <span className="lab">主管注意</span>
               <span className="txt">{line.text}</span>
               <span className="src">{line.fromZh}</span>
+              {line.textEn && (
+                <div className="en sup-en" lang="en">
+                  <span className="txt">
+                    <Words text={line.textEn} />
+                  </span>
+                  {line.fromEn && (
+                    <>
+                      {" "}
+                      <span className="src">{line.fromEn}</span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

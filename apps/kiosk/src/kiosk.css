@@ -202,6 +202,37 @@ html.gallery-page #root {
   width: 16cqh;
 }
 
+/* Sites that show English: the icon gives up some height to the English lines. */
+.stage[data-en] .hero img {
+  height: 26cqh;
+  width: 26cqh;
+}
+
+.stage[data-en][data-sup="1"] .hero img {
+  height: 21cqh;
+  width: 21cqh;
+}
+
+.stage[data-en][data-sup="2"] .hero img {
+  height: 17cqh;
+  width: 17cqh;
+}
+
+.stage[data-en][data-mode="heat"] .hero img {
+  height: 18cqh;
+  width: 18cqh;
+}
+
+.stage[data-en][data-mode="heat"][data-sup="1"] .hero img {
+  height: 15cqh;
+  width: 15cqh;
+}
+
+.stage[data-en][data-mode="heat"][data-sup="2"] .hero img {
+  height: 12cqh;
+  width: 12cqh;
+}
+
 .action {
   font-size: min(11.5cqh, calc(88cqw / var(--chars, 4)));
   font-weight: 900;
@@ -226,6 +257,52 @@ html.gallery-page #root {
 .note {
   font-size: 2.7cqh;
   font-weight: 700;
+}
+
+/* Official English (En in Screen.tsx), under the Chinese it belongs to: smaller and lighter, so the Chinese stays
+   the main text. Never hyphenated, and balanced when it wraps. */
+.en {
+  font-weight: 700;
+  line-height: 1.22;
+  hyphens: manual;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+.en-lines {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1cqh;
+  max-width: 84cqw;
+  margin-top: 0.2cqh;
+  font-size: 3.4cqh;
+}
+
+.meta-en,
+.note-en {
+  margin-top: -0.7cqh;
+}
+
+.meta-en {
+  font-size: 2.5cqh;
+  font-weight: 500;
+}
+
+.note-en {
+  font-size: 2.3cqh;
+}
+
+.en .nb {
+  white-space: nowrap;
+}
+
+/* English given up when the centre does not fit even at its smallest scale (useCenterScale in Screen.tsx). */
+.stage[data-en-shed] .meta-en,
+.stage[data-en-shed] .note-en,
+.stage[data-en-shed="2"] .sup-en,
+.stage[data-en-shed="3"] .fit [lang="en"] {
+  display: none;
 }
 
 .tiles {
@@ -287,6 +364,39 @@ html.gallery-page #root {
   min-height: 3.2cqh;
 }
 
+.tile .trades-en {
+  margin-top: 0.3cqh;
+  font-size: 2.3cqh;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* An English name stays on one line when it fits, and wraps inside itself only when it is wider than the tile. */
+.tile .trades-en .tn {
+  display: inline-block;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.tile-en {
+  align-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.1cqh 1.6cqw;
+  margin-top: 0.2cqh;
+  font-size: 2.4cqh;
+}
+
+.tile-en .en {
+  line-height: 1.2;
+}
+
+/* The suspended tile's empty second line only keeps it level with the others; its English takes that place. */
+.stage[data-en] .tile.stop > .small {
+  display: none;
+}
+
 .tile.stop {
   background: var(--fg);
 }
@@ -327,6 +437,24 @@ html.gallery-page #root {
   white-space: nowrap;
   font-size: 2.5cqh;
   font-weight: 500;
+}
+
+/* The English of a supervisor line takes a row of its own inside the box; the warning's English name follows
+   the text and shares its last line when there is room. */
+.sup-en {
+  flex-basis: 100%;
+  font-size: 2.6cqh;
+}
+
+.sup .sup-en .txt {
+  font-size: inherit;
+  font-weight: 700;
+}
+
+.sup .sup-en .src {
+  display: inline-block;
+  margin-left: 0.4em;
+  font-size: 0.8em;
 }
 
 .bar {
@@ -565,6 +693,28 @@ html.gallery-page #root {
     width: 9cqh;
   }
 
+  .stage[data-en] .hero img {
+    height: min(24cqh, 48cqw);
+    width: min(24cqh, 48cqw);
+  }
+
+  .stage[data-en][data-sup="1"] .hero img,
+  .stage[data-en][data-sup="2"] .hero img {
+    height: min(13cqh, 26cqw);
+    width: min(13cqh, 26cqw);
+  }
+
+  .stage[data-en][data-mode="heat"] .hero img {
+    height: 7cqh;
+    width: 7cqh;
+  }
+
+  .stage[data-en][data-mode="heat"][data-sup="1"] .hero img,
+  .stage[data-en][data-mode="heat"][data-sup="2"] .hero img {
+    height: 6cqh;
+    width: 6cqh;
+  }
+
   .action {
     font-size: min(10cqh, calc(92cqw / var(--chars, 4)));
   }
@@ -579,6 +729,20 @@ html.gallery-page #root {
 
   .note {
     font-size: 3.2cqw;
+  }
+
+  .en-lines {
+    max-width: 90cqw;
+    gap: 0.8cqh;
+    font-size: 3.7cqw;
+  }
+
+  .meta-en {
+    font-size: 3cqw;
+  }
+
+  .note-en {
+    font-size: 2.8cqw;
   }
 
   .tiles {
@@ -620,6 +784,20 @@ html.gallery-page #root {
     min-height: 4cqw;
   }
 
+  .tile .trades-en {
+    font-size: 2.9cqw;
+    line-height: 1.15;
+  }
+
+  .tile-en {
+    gap: 0.1cqh 2.4cqw;
+    font-size: 2.9cqw;
+  }
+
+  .tile-en .en {
+    line-height: 1.15;
+  }
+
   .sup {
     padding: 0.8cqh 3cqw;
     gap: 0.6cqh 2cqw;
@@ -635,6 +813,10 @@ html.gallery-page #root {
 
   .sup .src {
     font-size: 3cqw;
+  }
+
+  .sup-en {
+    font-size: 3.2cqw;
   }
 
   .bar {
