@@ -14,7 +14,7 @@ from app.wind import parse_wind_csv
 
 HKT = timezone(timedelta(hours=8))
 FIX = Path(__file__).resolve().parent / "fixtures"
-NAMES = ("hsww", "warnsum", "warningInfo", "rhrread", "fnd", "wind")
+NAMES = ("hsww", "warnsum", "warnsumEn", "warningInfo", "rhrread", "fnd", "wind")
 main.ENABLE_POLLER = False
 
 
@@ -26,6 +26,7 @@ def fake_feeds(fail=(), **values_override):
     values = {
         "hsww": load("hsww_cancelled_stale.json"),
         "warnsum": {},
+        "warnsumEn": {},
         "warningInfo": {},
         "rhrread": {},
         "fnd": {},
@@ -255,3 +256,42 @@ def test_a_failing_refresh_never_stops_the_poller(monkeypatch):
     monkeypatch.setattr(main, "POLL_SEC", 0)
     main._poll(stop)
     assert calls["n"] == 2 and main.POLLER["last"] is not None
+
+
+T8 = {"WTCSGNL": {"name": "熱帶氣旋警告信號", "code": "TC8NE", "type": "八號東北烈風或暴風信號", "actionCode": "ISSUE"}}
+T8_EN = {"WTCSGNL": {"name": "Tropical Cyclone Warning Signal", "code": "TC8NE",
+                     "type": "No. 8 Northeast Gale or Storm Signal", "actionCode": "ISSUE"}}
+
+
+def test_english_names_come_from_hkos_english_feed(monkeypatch):
+    client = client_with(fake_feeds(warnsum=T8, warnsumEn=T8_EN))
+    body = client.get("/api/v1/snapshot").json()
+    assert body["display"]["metaEn"] == "No. 8 Northeast Gale or Storm Signal"
+    assert body["display"]["en"][0] == "employees should be released from workplaces or from work by batches"
+    monkeypatch.setitem(main.SITES, "zh-only", {"siteId": "zh-only", "environment": "outdoor", "primaryTrades": []})
+    chinese = client.get("/api/v1/snapshot?site=zh-only").json()
+    assert chinese["site"]["languages"] == ["zh"] and "en" not in chinese["display"]
+    assert chinese["display"]["main"] == body["display"]["main"] == "分批離開工作地點"
+
+
+def test_a_failing_english_feed_never_affects_the_warnings():
+    client = client_with(fake_feeds(fail=("warnsumEn",), warnsum=T8))
+    body = client.get("/api/v1/snapshot").json()
+    assert body["display"]["main"] == "分批離開工作地點" and body["stale"] is False
+    assert body["display"]["metaEn"] is None  # no English name rather than a guess
+    health = client.get("/api/v1/health").json()
+    assert health["feeds"]["warnsumEn"]["ok"] is False and health["stale"] is False
+
+
+def test_the_service_polls_hkos_english_warning_summary():
+    feed = main.make_feeds().feeds["warnsumEn"]
+    assert feed.interval == 60
+    calls = []
+
+    class Client:
+        def get(self, url, params=None):
+            calls.append((url, params))
+            raise RuntimeError("offline")
+
+    assert feed.refresh(Client(), datetime.now(HKT)) is False
+    assert calls == [(main.WARN_URL, {"dataType": "warnsum", "lang": "en"})]

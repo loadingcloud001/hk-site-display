@@ -57,8 +57,8 @@ def _get_wind(client):
     return parse_wind_csv(response.content.decode("utf-8-sig"))
 
 
-def _hko(data_type):
-    return lambda client: _get_json(client, WARN_URL, {"dataType": data_type, "lang": "tc"})
+def _hko(data_type, lang="tc"):
+    return lambda client: _get_json(client, WARN_URL, {"dataType": data_type, "lang": lang})
 
 
 def make_feeds():
@@ -71,6 +71,9 @@ def make_feeds():
             Feed("fnd", _hko("fnd"), 1800),
             # HKO updates the wind report every 10 minutes.
             Feed("wind", _get_wind, 300),
+            # HKO's own English warning names, for sites that show English. Never decides what is in force, and
+            # last in the cycle, so a slow English feed never holds up the Chinese ones.
+            Feed("warnsumEn", _hko("warnsum", "en"), 60),
         ],
         lambda: httpx.Client(timeout=15.0),
     )
@@ -208,6 +211,7 @@ def snapshot(
         stale=stale,
         position=parse_position(lat, lon, acc),
         wind=FEEDS.value("wind"),
+        warnsum_en=FEEDS.value("warnsumEn"),
     )
     snap["source"] = "live"
     return snap

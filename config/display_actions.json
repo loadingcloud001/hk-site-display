@@ -1,40 +1,88 @@
 {
   "sources": {
     "ld-gn-heat": {
+      "lang": "zh",
       "titleZh": "勞工處《預防工作時中暑指引》",
       "edition": "第三版（修訂）2026年8月",
       "url": "https://www.labour.gov.hk/common/public/oh/Heat_Stress_GN_tc.pdf",
       "checked": "2026-10-06"
     },
     "ld-cop-weather": {
+      "lang": "zh",
       "titleZh": "勞工處《惡劣天氣及「極端情況」下的工作守則》",
       "edition": "2026年5月（中文版2026年6月）",
       "url": "https://www.labour.gov.hk/tc/public/pdf/wcp/Rainstorm.pdf",
       "checked": "2026-10-06"
     },
     "hko-tc": {
+      "lang": "zh",
       "titleZh": "天文台《熱帶氣旋警告信號生效時應注意的事項》",
       "edition": "網頁",
       "url": "https://www.hko.gov.hk/tc/informtc/precaution.htm",
       "checked": "2026-10-06"
     },
     "hko-rain": {
+      "lang": "zh",
       "titleZh": "天文台《暴雨警告系統》",
       "edition": "網頁",
       "url": "https://www.hko.gov.hk/tc/wservice/warning/rainstor.htm",
       "checked": "2026-10-06"
     },
     "hko-landslip": {
+      "lang": "zh",
       "titleZh": "天文台《山泥傾瀉警告》",
       "edition": "網頁",
       "url": "https://www.hko.gov.hk/tc/wservice/warning/landslip.htm",
       "checked": "2026-10-06"
     },
     "hko-tsunami": {
+      "lang": "zh",
       "titleZh": "天文台《香港海嘯的監測及警告》",
       "edition": "網頁",
       "url": "https://www.hko.gov.hk/tc/gts/equake/tsunami_mon.htm",
       "checked": "2026-10-06"
+    },
+    "ld-gn-heat-en": {
+      "lang": "en",
+      "titleEn": "Labour Department, Guidance Notes on Prevention of Heat Stroke at Work",
+      "edition": "Third edition (Revised) August 2026",
+      "url": "https://www.labour.gov.hk/common/public/oh/Heat_Stress_GN_en.pdf",
+      "checked": "2026-11-07"
+    },
+    "ld-cop-weather-en": {
+      "lang": "en",
+      "titleEn": "Labour Department, Code of Practice in Times of Adverse Weather and “Extreme Conditions”",
+      "edition": "May 2026",
+      "url": "https://www.labour.gov.hk/eng/public/wcp/Rainstorm.pdf",
+      "checked": "2026-11-07"
+    },
+    "hko-tc-en": {
+      "lang": "en",
+      "titleEn": "HKO, Precautionary Measures when Tropical Cyclone Warning Signals are in force",
+      "edition": "web page",
+      "url": "https://www.hko.gov.hk/en/informtc/precaution.htm",
+      "checked": "2026-11-07"
+    },
+    "hko-rain-en": {
+      "lang": "en",
+      "titleEn": "HKO, Rainstorm Warning System",
+      "edition": "web page",
+      "url": "https://www.hko.gov.hk/en/wservice/warning/rainstor.htm",
+      "checked": "2026-11-07"
+    },
+    "hko-landslip-en": {
+      "lang": "en",
+      "titleEn": "HKO, Landslip Warning",
+      "edition": "web page",
+      "url": "https://www.hko.gov.hk/en/wservice/warning/landslip.htm",
+      "checked": "2026-11-07"
+    },
+    "hko-tsunami-en": {
+      "lang": "en",
+      "titleEn": "HKO, Tsunami Monitoring and Warning in Hong Kong",
+      "edition": "web page",
+      "url": "https://www.hko.gov.hk/en/gts/equake/tsunami_mon.htm",
+      "checked": "2026-11-07"
     }
   },
   "weather": {
@@ -44,7 +92,13 @@
       "sub": ["同時留意風向轉變"],
       "quotes": [
         {"source": "hko-tc", "text": "倘若風眼直接掠過本港，風勢會停息數分鐘至數小時不等，但具有破壞性的風力隨時會突然恢復並從另一個方向吹來。切勿離開有遮蔽的地方，同時留意風向轉變。"}
-      ]
+      ],
+      "en": {
+        "lines": ["Remain where you are if protected and be prepared for destructive winds and the change in wind directions"],
+        "quotes": [
+          {"source": "hko-tc-en", "text": "If the eye of the tropical cyclone passes directly over Hong Kong, there may be a temporary lull lasting from a few minutes to several hours. This will be followed by a sudden resumption of violent winds from a different direction. Remain where you are if protected and be prepared for destructive winds and the change in wind directions."}
+        ]
+      }
     },
     "tc9": {
       "codes": ["TC9"],
@@ -52,7 +106,13 @@
       "sub": ["如果已經在有遮蔽的地方躲避，就應該繼續留在原處"],
       "quotes": [
         {"source": "hko-tc", "text": "切勿外出。如果已經在有遮蔽的地方躲避，就應該繼續留在原處。切勿接觸被風吹倒的電線。"}
-      ]
+      ],
+      "en": {
+        "lines": ["Stay indoors. If you are reasonably protected, stay where you are"],
+        "quotes": [
+          {"source": "hko-tc-en", "text": "Stay indoors. If you are reasonably protected, stay where you are. Do not touch electric cables that have been blown loose."}
+        ]
+      }
     },
     "rain-black": {
       "codes": ["WRAINB"],
@@ -60,7 +120,13 @@
       "sub": ["並到安全地方暫避"],
       "quotes": [
         {"source": "hko-rain", "text": "在空曠地方工作的人士應停止戶外作業，並到安全地方暫避。"}
-      ]
+      ],
+      "en": {
+        "lines": ["Employees working outdoors in exposed areas should stop work and take shelter"],
+        "quotes": [
+          {"source": "hko-rain-en", "text": "Employees working outdoors in exposed areas should stop work and take shelter."}
+        ]
+      }
     },
     "tc8": {
       "codes": ["TC8NE", "TC8SE", "TC8NW", "TC8SW"],
@@ -69,7 +135,17 @@
       "quotes": [
         {"source": "ld-cop-weather", "text": "當八號預警（在預計發出八號信號前兩小時內發出）或八號信號發出，按預先協定分批離開工作地點或下班。"},
         {"source": "hko-tc", "text": "如情況許可，市民應盡早回家，避免逗留在街上。"}
-      ]
+      ],
+      "en": {
+        "lines": [
+          "employees should be released from workplaces or from work by batches",
+          "Return home as soon as possible if conditions so permit"
+        ],
+        "quotes": [
+          {"source": "ld-cop-weather-en", "text": "Upon the issuance of the Pre-No. 8 Special Announcement (made when T8 is expected within two hours) or T8, employees should be released from workplaces or from work by batches in accordance with prior arrangements."},
+          {"source": "hko-tc-en", "text": "Avoid staying in the street. Return home as soon as possible if conditions so permit."}
+        ]
+      }
     },
     "landslip": {
       "codes": ["WL"],
@@ -78,7 +154,17 @@
       "quotes": [
         {"source": "hko-landslip", "text": "當山泥傾瀉警告生效時，市民應取消不必要的約會，留在家中或其他安全地方。行人應避免靠近陡峭的斜坡和護土牆。"},
         {"source": "ld-cop-weather", "text": "在發出強烈季候風信號及山泥傾瀉警告時，應停止操作起重機、吊船、進行斜坡工程等工作。"}
-      ]
+      ],
+      "en": {
+        "lines": [
+          "Pedestrians should avoid walking or standing close to steep slopes and retaining walls",
+          "the operation of cranes, suspended working platforms, slope works, etc. should be suspended"
+        ],
+        "quotes": [
+          {"source": "hko-landslip-en", "text": "When the Landslip Warning is in force, you should cancel non-essential appointments, stay at home or in a safe shelter. Pedestrians should avoid walking or standing close to steep slopes and retaining walls."},
+          {"source": "ld-cop-weather-en", "text": "When the Strong Monsoon Signal or Landslip Warning is issued, the operation of cranes, suspended working platforms, slope works, etc. should be suspended."}
+        ]
+      }
     },
     "tsunami": {
       "codes": ["WTMW"],
@@ -86,7 +172,13 @@
       "sub": ["前往內陸地方或地勢較高的地面"],
       "quotes": [
         {"source": "hko-tsunami", "text": "遠離岸邊、海灘及沿岸低窪地區。如身處這些地點，應前往內陸地方或地勢較高的地面。"}
-      ]
+      ],
+      "en": {
+        "lines": ["Stay away from shores, beaches and low-lying coastal areas. If you are there, move inland or to higher grounds"],
+        "quotes": [
+          {"source": "hko-tsunami-en", "text": "Stay away from shores, beaches and low-lying coastal areas. If you are there, move inland or to higher grounds."}
+        ]
+      }
     },
     "pre8": {
       "codes": ["WTCPRE8"],
@@ -94,7 +186,13 @@
       "sub": [],
       "quotes": [
         {"source": "ld-cop-weather", "text": "當八號預警（在預計發出八號信號前兩小時內發出）或八號信號發出，按預先協定分批離開工作地點或下班。"}
-      ]
+      ],
+      "en": {
+        "lines": ["employees should be released from workplaces or from work by batches"],
+        "quotes": [
+          {"source": "ld-cop-weather-en", "text": "Upon the issuance of the Pre-No. 8 Special Announcement (made when T8 is expected within two hours) or T8, employees should be released from workplaces or from work by batches in accordance with prior arrangements."}
+        ]
+      }
     },
     "rain-red": {
       "codes": ["WRAINR"],
@@ -102,7 +200,13 @@
       "sub": ["直至天氣情況許可為止"],
       "quotes": [
         {"source": "hko-rain", "text": "在空曠地方工作的人士應暫停戶外作業，直至天氣情況許可為止。"}
-      ]
+      ],
+      "en": {
+        "lines": ["Employees working outdoors in areas exposed to rain should suspend outdoor duties if weather conditions in those areas so warrant"],
+        "quotes": [
+          {"source": "hko-rain-en", "text": "Employees working outdoors in areas exposed to rain should suspend outdoor duties if weather conditions in those areas so warrant."}
+        ]
+      }
     }
   },
   "supervisor": {
@@ -112,7 +216,16 @@
       "fragments": ["有僱員可能遭受雷電擊中時", "立即停止工作，並到安全地方暫避"],
       "quotes": [
         {"source": "ld-cop-weather", "text": "在雷暴警告生效期間及有僱員可能遭受雷電擊中時，主管應在切實可行範圍內盡量安排僱員立即停止工作，並到安全地方暫避。"}
-      ]
+      ],
+      "en": {
+        "fragments": [
+          "where employees are liable to lightning strikes",
+          "stop work as far as practicable and take shelter in a safe place immediately"
+        ],
+        "quotes": [
+          {"source": "ld-cop-weather-en", "text": "When Thunderstorm Warnings are in force, and where employees are liable to lightning strikes, their supervisors should arrange for the employees to stop work as far as practicable and take shelter in a safe place immediately."}
+        ]
+      }
     },
     "monsoon": {
       "rank": 2,
@@ -120,7 +233,13 @@
       "fragments": ["停止操作起重機、吊船、進行斜坡工程"],
       "quotes": [
         {"source": "ld-cop-weather", "text": "在發出強烈季候風信號及山泥傾瀉警告時，應停止操作起重機、吊船、進行斜坡工程等工作。"}
-      ]
+      ],
+      "en": {
+        "fragments": ["the operation of cranes, suspended working platforms, slope works, etc. should be suspended"],
+        "quotes": [
+          {"source": "ld-cop-weather-en", "text": "When the Strong Monsoon Signal or Landslip Warning is issued, the operation of cranes, suspended working platforms, slope works, etc. should be suspended."}
+        ]
+      }
     },
     "tc1-tc3": {
       "rank": 3,
@@ -128,7 +247,13 @@
       "fragments": ["停止操作起重機、吊船"],
       "quotes": [
         {"source": "ld-cop-weather", "text": "在一號或三號信號期間︰停止操作起重機、吊船等。"}
-      ]
+      ],
+      "en": {
+        "fragments": ["Stop the operation of cranes, suspended working platforms, etc."],
+        "quotes": [
+          {"source": "ld-cop-weather-en", "text": "When T1 or T3 is in force: Stop the operation of cranes, suspended working platforms, etc."}
+        ]
+      }
     },
     "rain-amber": {
       "rank": 4,
@@ -136,7 +261,13 @@
       "fragments": ["停止操作吊船、進行斜坡工程"],
       "quotes": [
         {"source": "ld-cop-weather", "text": "在黃色或紅色暴雨警告期間︰停止操作吊船、進行斜坡工程等工作。"}
-      ]
+      ],
+      "en": {
+        "fragments": ["Suspend the operation of suspended working platforms, slope works, etc."],
+        "quotes": [
+          {"source": "ld-cop-weather-en", "text": "When Amber or Red Rainstorm Warning Signal is in force: Suspend the operation of suspended working platforms, slope works, etc."}
+        ]
+      }
     }
   },
   "notes": {
@@ -144,7 +275,66 @@
       "fragments": ["僱員未適應或需重新適應在酷熱環境中工作", "每小時的休息時間應增加15分鐘"],
       "quotes": [
         {"source": "ld-gn-heat", "text": "若僱員未適應或需重新適應在酷熱環境中工作，例如以往未曾或超過兩星期不曾在酷熱的環境中工作，僱主除了須跟從第4.6章有關熱適應期的安排外，當工作暑熱警告生效時，有關僱員每小時的休息時間應增加15分鐘。"}
-      ]
+      ],
+      "en": {
+        "fragments": [
+          "employees are unacclimatised or need to re-acclimate to hot work environment",
+          "increase the hourly rest time for such employees by 15 minutes"
+        ],
+        "quotes": [
+          {"source": "ld-gn-heat-en", "text": "If the employees are unacclimatised or need to re-acclimate to hot work environment, such as not having worked in a hot environment in the past or for more than two weeks, in addition to following the arrangements regarding the acclimation period as described in section 4.6, employers should increase the hourly rest time for such employees by 15 minutes when Heat Stress at Work Warning is in effect."}
+        ]
+      }
+    }
+  },
+  "rest": {
+    "_note": [
+      "English for the heat-stress tiles and the normal-day rest lines; the Chinese is built in services/ingest/app/heat.py and apps/kiosk/src/Screen.tsx.",
+      "{rest}, {work} and {hours} come from config/rest_schedule.json. tests/test_display_actions.py fills in every value the schedule can produce and checks each result against the quotes.",
+      "workloads: the generic site's tile labels (Appendix 4 column headings). tile: Appendix 4 cells, and para 5.5.4 for the 2-hour baseline. normal: para 4.7.1, shown as group: rule when a site has both groups."
+    ],
+    "workloads": {
+      "en": {
+        "labels": {
+          "light": "Light",
+          "moderate": "Moderate",
+          "heavy": "Heavy",
+          "very_heavy": "Very Heavy"
+        },
+        "quotes": [
+          {"source": "ld-gn-heat-en", "text": "Light Moderate Heavy Very Heavy"}
+        ]
+      }
+    },
+    "tile": {
+      "en": {
+        "rest": "{rest} mins rest",
+        "work": "{work} mins work",
+        "suspend": "Suspension of work",
+        "baseline": "at least {rest} minutes of rest for every {hours} hours of work",
+        "quotes": [
+          {"source": "ld-gn-heat-en", "text": "45 mins work 15 mins rest (75% work; 25% rest)"},
+          {"source": "ld-gn-heat-en", "text": "30 mins work 30 mins rest (50% work; 50% rest)"},
+          {"source": "ld-gn-heat-en", "text": "15 mins work 45 mins rest (25% work; 75% rest)"},
+          {"source": "ld-gn-heat-en", "text": "Suspension of work"},
+          {"source": "ld-gn-heat-en", "text": "If the adjusted hourly rest time for employees becomes zero minutes after implementation of all heat preventive measures, the employers should still follow the recommendation in paragraph 4.7.1 to arrange at least 10 minutes of rest for every 2 hours of work for employees performing light to moderate level of physical work, and at least 15 minutes of rest for every 2 hours of work for employees performing heavy to very heavy level of physical work to let them recuperate, drink water and cool down their body."}
+        ]
+      }
+    },
+    "normal": {
+      "en": {
+        "heavy": [
+          "heavy to very heavy levels of physical work",
+          "at least a {rest}-minute rest break after every {hours} hours of work"
+        ],
+        "light": [
+          "light to moderate levels of physical work",
+          "a minimum of a {rest}-minute rest break after every {hours} hours of work"
+        ],
+        "quotes": [
+          {"source": "ld-gn-heat-en", "text": "For instance, employers should let employees performing light to moderate levels of physical work have a minimum of a 10-minute rest break after every 2 hours of work, while employees performing heavy to very heavy levels of physical work should be given at least a 15-minute rest break after every 2 hours of work (If the Heat Stress at Work Warning is in effect, employers should arrange hourly rest time for the employees in need as recommended in section 5.5 of these Guidance Notes)."}
+        ]
+      }
     }
   }
 }

@@ -5,9 +5,9 @@ Run from the repo root. The PDFs need pypdf with AES support: pip install "pypdf
     python3 scripts/check_official_sources.py --update-lock   record the Labour Department PDFs as verified
 
 Every source in config/display_actions.json is downloaded again, and every quote that cites it (weather,
-supervisor and notes) must still be in it word for word. Only whitespace, list bullets at the start of a
-line, the punctuation variants ︰ : , ; ( ) against their full-width forms, and PDF glyph artifacts
-(⾏ for 行, full-width digits) are ignored.
+supervisor and notes, their English, and the English rest wording) must still be in it word for word. Only
+whitespace, list bullets at the start of a line, the punctuation variants ︰ : , ; ( ) against their full-width
+forms, and PDF glyph artifacts (⾏ for 行, full-width digits) are ignored.
 
 The Labour Department PDFs are also compared with config/official_sources_lock.json. A changed PDF fails the
 check even when every quote still matches, because its rest tables (config/rest_schedule.json) are not
@@ -40,7 +40,7 @@ USER_AGENT = "hk-site-display official-source check (+https://github.com/loading
 TIMEOUT_SEC = 60
 RETRY_WAIT_SEC = (5, 15)  # two retries
 HKT = timezone(timedelta(hours=8))
-SECTIONS = ("weather", "supervisor", "notes")
+SECTIONS = ("weather", "supervisor", "notes", "rest")
 UPDATE_LOCK = "python3 scripts/check_official_sources.py --update-lock"
 LOCK_NOTE = (
     "Labour Department PDFs as last verified by a person (spec §9). "
@@ -51,6 +51,10 @@ REVERIFY = {
     "ld-gn-heat": "its edition, App. 1, App. 4, App. 4(a), §4.7.1, §5.4.4, §5.5.4 and App. 6 against "
     "config/rest_schedule.json and config/display_actions.json",
     "ld-cop-weather": "its edition and App. 2 (what to do under each warning) against config/display_actions.json",
+    "ld-gn-heat-en": "its edition, App. 1, App. 4, App. 4(a), §4.7.1, §5.4.4 and §5.5.4 against "
+    "config/rest_schedule.json and the English in config/display_actions.json",
+    "ld-cop-weather-en": "its edition and App. 2 (what to do under each warning) against the English in "
+    "config/display_actions.json",
 }
 REVERIFY_OTHER = "the whole document against config/display_actions.json and config/rest_schedule.json"
 
@@ -127,14 +131,26 @@ def pdf_text(body):
     return "\n".join(page.extract_text() or "" for page in reader.pages)
 
 
+def cited_quotes(actions):
+    """(where, quote) for every quote in the file: each entry's Chinese quotes, then its English ones."""
+    out = []
+    for section in SECTIONS:
+        for name, spec in (actions.get(section) or {}).items():
+            if not isinstance(spec, dict):
+                continue  # notes such as rest._note
+            out += [(f"{section}.{name}", quote) for quote in spec.get("quotes") or []]
+            english = spec.get("en")
+            if isinstance(english, dict):
+                out += [(f"{section}.{name}.en", quote) for quote in english.get("quotes") or []]
+    return out
+
+
 def quotes_by_source(actions):
     """source key -> [(quote, [where, ...])], each distinct quote once, in file order."""
     out = {}
-    for section in SECTIONS:
-        for name, spec in (actions.get(section) or {}).items():
-            for quote in spec.get("quotes") or []:
-                texts = out.setdefault(quote.get("source"), {})
-                texts.setdefault(quote.get("text") or "", []).append(f"{section}.{name}")
+    for where, quote in cited_quotes(actions):
+        texts = out.setdefault(quote.get("source"), {})
+        texts.setdefault(quote.get("text") or "", []).append(where)
     return {key: list(texts.items()) for key, texts in out.items()}
 
 
@@ -187,7 +203,7 @@ def check_source(key, source, quotes, entry, compare, get, read_pdf):
     url = source.get("url") or ""
     result = {
         "key": key,
-        "title": source.get("titleZh") or key,
+        "title": source.get("titleZh") or source.get("titleEn") or key,
         "edition": source.get("edition") or "",
         "url": url,
         "kind": kind_of(url),

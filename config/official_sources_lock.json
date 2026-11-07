@@ -13,5 +13,19 @@
     "size": 7557313,
     "lastModified": "Fri, 05 Jun 2026 06:23:00 GMT",
     "checked": "2026-10-06"
+  },
+  "ld-gn-heat-en": {
+    "url": "https://www.labour.gov.hk/common/public/oh/Heat_Stress_GN_en.pdf",
+    "sha256": "c0e5fdda53d06d2bd5f08d41c27198b043fb86155782253276ba3d25411ab2df",
+    "size": 2724710,
+    "lastModified": "Thu, 27 Aug 2026 05:55:01 GMT",
+    "checked": "2026-11-07"
+  },
+  "ld-cop-weather-en": {
+    "url": "https://www.labour.gov.hk/eng/public/wcp/Rainstorm.pdf",
+    "sha256": "9c90e081f3b274be00d2c7276c60c9e8730f48c0fe8bc78c6a7c54340215781c",
+    "size": 8695195,
+    "lastModified": "Mon, 04 May 2026 08:06:02 GMT",
+    "checked": "2026-11-07"
   }
 }

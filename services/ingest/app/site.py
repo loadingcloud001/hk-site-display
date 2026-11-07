@@ -6,16 +6,24 @@ from app.stations import OBSERVATORY, station_names, wind_station_names
 
 WORKLOADS = ("light", "moderate", "heavy", "very_heavy")
 ENVIRONMENTS = ("outdoor", "indoor", "aircon")
+# Every rest adjustment a site or trade may set: a multiple of 15 minutes from -30 to +60.
+ADJUST_MINUTES = tuple(range(-30, 61, 15))
 # Official labels, Labour Department guidance notes Appendix 1.
 WORKLOAD_ZH = {"light": "輕勞動", "moderate": "中等勞動", "heavy": "重勞動", "very_heavy": "極重勞動"}
+# The screen's languages. Chinese is always shown and always the main text; "en" adds the official English.
+LANGUAGES = ("zh", "en")
 
 
 def _adjust_ok(value):
+    return isinstance(value, int) and not isinstance(value, bool) and value in ADJUST_MINUTES
+
+
+def _languages_ok(value):
     return (
-        isinstance(value, int)
-        and not isinstance(value, bool)
-        and value % 15 == 0
-        and -30 <= value <= 60
+        isinstance(value, list)
+        and all(isinstance(lang, str) and lang in LANGUAGES for lang in value)
+        and len(set(value)) == len(value)
+        and "zh" in value
     )
 
 
@@ -39,6 +47,8 @@ def validate_site(site, where="site config"):
     site_id = site.get("siteId")
     if site_id is not None and (not isinstance(site_id, str) or not site_id.strip()):
         errors.append("siteId must be a non-empty string")
+    if "languages" in site and not _languages_ok(site["languages"]):
+        errors.append('languages must be ["zh"] or ["zh", "en"]: Chinese is always shown')
     trades = site.get("primaryTrades") or []
     if not isinstance(trades, list):
         errors.append("primaryTrades must be a list")
@@ -50,6 +60,8 @@ def validate_site(site, where="site config"):
             continue
         if not trade.get("labelZh") or not isinstance(trade["labelZh"], str):
             errors.append(f"{trade_at}.labelZh is required")
+        if "labelEn" in trade and (not isinstance(trade["labelEn"], str) or not trade["labelEn"].strip()):
+            errors.append(f"{trade_at}.labelEn must be a non-empty string")
         if trade.get("workload") not in WORKLOADS:
             errors.append(f"{trade_at}.workload must be one of {WORKLOADS}")
         if trade.get("environment", env) not in ENVIRONMENTS:
@@ -116,6 +128,11 @@ def load_sites(directory, wanted=None):
     return sites, default, problems
 
 
+def site_languages(site):
+    """The languages a site's screens show: ["zh"], or ["zh", "en"] when the site file asks for English."""
+    return list(site.get("languages") or ["zh"])
+
+
 def configured_trades(site):
     env = site.get("environment", "outdoor")
     adjust = site.get("restAdjustMinutes", 0)
@@ -123,6 +140,8 @@ def configured_trades(site):
         {
             "id": t.get("id") or t["labelZh"],
             "labelZh": t["labelZh"],
+            # The site's own English name for the trade, like labelZh; only shown on screens with English.
+            **({"labelEn": t["labelEn"].strip()} if t.get("labelEn") else {}),
             "workload": t["workload"],
             "environment": t.get("environment", env),
             "adjustMinutes": t.get("adjustMinutes", adjust),
@@ -138,8 +157,10 @@ def tile_trades(site):
         return trades
     env = site.get("environment", "outdoor")
     adjust = site.get("restAdjustMinutes", 0)
+    # `generic`: the label is the official workload level, so its English is official too (heat.py).
     return [
-        {"id": wl, "labelZh": WORKLOAD_ZH[wl], "workload": wl, "environment": env, "adjustMinutes": adjust}
+        {"id": wl, "labelZh": WORKLOAD_ZH[wl], "workload": wl, "environment": env, "adjustMinutes": adjust,
+         "generic": True}
         for wl in WORKLOADS
     ]
 

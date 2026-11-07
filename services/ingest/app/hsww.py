@@ -58,6 +58,7 @@ def parse_hkhi_icon(raw: dict) -> dict:
         "cancelled": idx == -1,
         "iconIndex": idx,
         "titleZh": raw.get("TitleTC") or "",
+        "titleEn": raw.get("TitleEN") or "",
         "noticeZh": raw.get("MessageTC2") or "",
         "noticeLeadZh": raw.get("MessageTC1") or "",
         "issuedAt": raw.get("date") or "",

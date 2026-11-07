@@ -7,6 +7,7 @@ from app.site import (
     GENERIC_SITE,
     configured_trades,
     load_sites,
+    site_languages,
     normal_workloads,
     tile_trades,
     validate_site,
@@ -184,3 +185,36 @@ def test_generic_site_shows_every_workload_level():
 def test_the_shipped_site_folder_loads():
     sites, default, problems = load_sites(ROOT / "config" / "sites")
     assert default == "demo-kai-tak" and sites[default]["windStation"] == "啟德" and problems == []
+
+
+@pytest.mark.parametrize("languages", [["zh"], ["zh", "en"], ["en", "zh"]])
+def test_languages_must_keep_chinese(languages):
+    assert site_languages(validate_site({**DEMO, "languages": languages})) == languages
+
+
+@pytest.mark.parametrize("languages", [["en"], [], ["zh", "zh"], ["zh", "fr"], "zh", None, ["zh", 1]])
+def test_languages_without_chinese_or_unknown_are_rejected(languages):
+    with pytest.raises(ValueError, match="languages"):
+        validate_site({**DEMO, "languages": languages})
+
+
+def test_a_site_without_languages_shows_chinese_only():
+    assert site_languages({}) == ["zh"] and site_languages(GENERIC_SITE) == ["zh"]
+
+
+def test_label_en_is_optional_but_never_empty():
+    (trade,) = configured_trades({"primaryTrades": [{"labelZh": "紮鐵", "labelEn": " Bar-fixing worker ", "workload": "very_heavy"}]})
+    assert trade["labelEn"] == "Bar-fixing worker"
+    assert "labelEn" not in configured_trades({"primaryTrades": [{"labelZh": "紮鐵", "workload": "heavy"}]})[0]
+    for bad in ("", "  ", 7, None):
+        with pytest.raises(ValueError, match=r"primaryTrades\[0\].labelEn"):
+            validate_site({"primaryTrades": [{"labelZh": "紮鐵", "labelEn": bad, "workload": "heavy"}]})
+
+
+def test_demo_site_shows_english_with_appendix_1_trade_names():
+    assert site_languages(DEMO) == ["zh", "en"]
+    by = {t["labelZh"]: t.get("labelEn") for t in configured_trades(DEMO)}
+    assert by == {
+        "紮鐵": "Bar-fixing worker", "棚架": "Scaffolder", "釘板": "Carpenter", "混凝土": "Concrete worker",
+        "水喉": "Plumber", "焊接": "Welder", "保安": "Security guard", "檢查": "Inspector of works",
+    }

@@ -105,6 +105,45 @@ def _info(code: str, text: str, subtype: str | None = None, minutes_ago: int = O
     }
 
 
+# HKO's English warnsum for the same warnings (`lang=en`): name and type as the live feed sends them (HKO Open
+# Data API documentation, warnsum). Preview data only; live screens read HKO's English feed.
+WARN_EN = {
+    "TC1": ("Tropical Cyclone Warning Signal", "Standby Signal No. 1"),
+    "TC3": ("Tropical Cyclone Warning Signal", "Strong Wind Signal No. 3"),
+    "TC8NE": ("Tropical Cyclone Warning Signal", "No. 8 Northeast Gale or Storm Signal"),
+    "TC8SE": ("Tropical Cyclone Warning Signal", "No. 8 Southeast Gale or Storm Signal"),
+    "TC8NW": ("Tropical Cyclone Warning Signal", "No. 8 Northwest Gale or Storm Signal"),
+    "TC8SW": ("Tropical Cyclone Warning Signal", "No. 8 Southwest Gale or Storm Signal"),
+    "TC9": ("Tropical Cyclone Warning Signal", "Increasing Gale or Storm Signal No. 9"),
+    "TC10": ("Tropical Cyclone Warning Signal", "Hurricane Signal No. 10"),
+    "WRAINA": ("Rainstorm Warning Signal", "Amber"),
+    "WRAINR": ("Rainstorm Warning Signal", "Red"),
+    "WRAINB": ("Rainstorm Warning Signal", "Black"),
+    "WFIREY": ("Fire Danger Warning", "Yellow"),
+    "WFIRER": ("Fire Danger Warning", "Red"),
+    "WTS": ("Thunderstorm Warning", ""),
+    "WL": ("Landslip Warning", ""),
+    "WHOT": ("Hot Weather Warning", ""),
+    "WMSGNL": ("Strong Monsoon Signal", ""),
+    "WCOLD": ("Cold Weather Warning", ""),
+    "WFROST": ("Frost Warning", ""),
+    "WFNTSA": ("Special Announcement on Flooding in the northern New Territories", ""),
+    "WTMW": ("Tsunami Warning", ""),
+}
+
+
+def _english(warnsum: dict) -> dict:
+    """The English warnsum matching a preview case's Chinese one: same keys, codes, actions and times."""
+    out = {}
+    for key, entry in (warnsum or {}).items():
+        name, type_ = WARN_EN[entry["code"]]
+        english = {**{k: v for k, v in entry.items() if k != "type"}, "name": name}
+        if type_:
+            english["type"] = type_
+        out[key] = english
+    return out
+
+
 TC3_WARN = _warn("TC3", "熱帶氣旋警告信號", "三號強風信號")
 TC3_INFO = _info("WTCSGNL", "三號強風信號現正生效。", "TC3")
 
@@ -362,10 +401,12 @@ SPECS = [
         "hsww": "hsww_amber_inforce.json",
         "site": {
             "primaryTrades": [
-                {"id": "bar-fixer", "labelZh": "紮鐵", "workload": "very_heavy"},
-                {"id": "fitout", "labelZh": "室內裝修", "workload": "moderate", "environment": "indoor"},
-                {"id": "electrician", "labelZh": "電工", "workload": "moderate", "environment": "aircon"},
-                {"id": "welder", "labelZh": "焊接", "workload": "moderate", "adjustMinutes": 15},
+                {"id": "bar-fixer", "labelZh": "紮鐵", "labelEn": "Bar-fixing worker", "workload": "very_heavy"},
+                {"id": "fitout", "labelZh": "室內裝修", "labelEn": "Renovation worker", "workload": "moderate",
+                 "environment": "indoor"},
+                {"id": "electrician", "labelZh": "電工", "labelEn": "Electrician", "workload": "moderate",
+                 "environment": "aircon"},
+                {"id": "welder", "labelZh": "焊接", "labelEn": "Welder", "workload": "moderate", "adjustMinutes": 15},
             ]
         },
     },
@@ -436,6 +477,7 @@ def build_case(name: str, site: dict | None = None) -> dict:
         now=SIM_NOW,
         stale=bool(spec.get("stale")),
         wind=_wind(spec.get("windAgo", 6)),
+        warnsum_en=_english(spec.get("warnsum")),
     )
     if spec.get("stale"):
         snap["tone"] = "stale"

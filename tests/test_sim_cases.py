@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.sim_cases import CASE_IDS, build_case, list_cases, list_official_icons
+from app.sim_cases import CASE_IDS, SITE, build_case, list_cases, list_official_icons
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "apps" / "kiosk" / "public"
@@ -250,3 +250,47 @@ def test_two_supervisor_lines():
 
 def test_pre8_shows_the_signal_in_force():
     assert build_case("pre8-amber")["display"]["heroRel"] == "official/warning/tc3.png"
+
+
+EN_KEYS = ("en", "metaEn", "notesEn", "textEn", "fromEn")
+
+
+def without_english(value):
+    if isinstance(value, dict):
+        return {k: without_english(v) for k, v in value.items() if k not in EN_KEYS}
+    if isinstance(value, list):
+        return [without_english(v) for v in value]
+    return value
+
+
+def test_english_never_changes_the_chinese_in_any_case():
+    chinese_only = {k: v for k, v in SITE.items() if k != "languages"}
+    for case_id in CASE_IDS:
+        english = without_english(build_case(case_id))
+        chinese = build_case(case_id, chinese_only)
+        assert english["site"].pop("languages") == ["zh", "en"], case_id
+        assert chinese["site"].pop("languages") == ["zh"], case_id
+        assert english == chinese, case_id
+
+
+def test_every_case_has_english_names_and_lines_where_official_ones_exist():
+    for case_id in CASE_IDS:
+        snap = build_case(case_id)
+        display = snap["display"]
+        if display["mode"] == "weather":
+            assert display["en"] and display["metaEn"], case_id
+        elif display["mode"] == "heat":
+            assert display["metaEn"] and snap["notesEn"], case_id
+            assert all(tile["en"]["lines"] for tile in snap["restTiles"]), case_id
+        else:
+            assert display["en"] and display["metaEn"] is None, case_id
+        for line in snap["supervisor"]:
+            assert line["textEn"] and line["fromEn"], case_id
+
+
+def test_preview_english_names_follow_the_live_feed_shape():
+    assert build_case("rain-black")["display"]["metaEn"] == "Black Rainstorm Warning Signal"
+    assert build_case("tc9")["display"]["metaEn"] == "Increasing Gale or Storm Signal No. 9"
+    lines = build_case("rain-amber-tc3")["supervisor"]
+    assert [line["fromEn"] for line in lines] == ["Strong Wind Signal No. 3", "Amber Rainstorm Warning Signal"]
+    assert build_case("trades-indoor")["restTiles"][0]["en"]["trades"] == "Bar-fixing worker"

@@ -1,4 +1,5 @@
 """Which state the screen is in, its tone, and the supervisor lines."""
+from app.actions import ZH_JOIN, english_text
 
 # Spec §4.2: instructions to stay sheltered outrank instructions to leave.
 WEATHER_ORDER = ["TC10", "TC9", "WRAINB", "TC8NE", "TC8SE", "TC8NW", "TC8SW", "WL", "WTMW", "WTCPRE8", "WRAINR"]
@@ -27,16 +28,24 @@ def state_tone(mode, code, level):
     return "idle"
 
 
-def supervisor_lines(actions, codes, labels):
-    """Official supervisor instructions for warnings in force, most severe first, at most two."""
+def supervisor_lines(actions, codes, labels, labels_en=None):
+    """Official supervisor instructions for warnings in force, most severe first, at most two.
+
+    With `labels_en` (HKO's English names by code, for a site that shows English) each line also gets its
+    official English (`textEn`) and the warning's English name (`fromEn`); either is None when there is none.
+    """
     present = set(codes or [])
     hits = []
     for spec in (actions.get("supervisor") or {}).values():
         code = next((c for c in spec["codes"] if c in present), None)
         if code:
-            hits.append((spec["rank"], "：".join(spec["fragments"]), labels.get(code) or code))
+            line = {"text": ZH_JOIN.join(spec["fragments"]), "fromZh": labels.get(code) or code}
+            if labels_en is not None:
+                line["textEn"] = english_text(spec)
+                line["fromEn"] = labels_en.get(code)
+            hits.append((spec["rank"], line))
     hits.sort(key=lambda hit: hit[0])
-    return [{"text": text, "fromZh": label} for _, text, label in hits[:MAX_SUPERVISOR]]
+    return [line for _, line in hits[:MAX_SUPERVISOR]]
 
 
 def tc_signal_code(codes):
