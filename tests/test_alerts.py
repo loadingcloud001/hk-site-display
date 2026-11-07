@@ -21,7 +21,7 @@ from app.alerts import (
     is_escalation,
 )
 from app.feeds import Feed, FeedSet
-from app.hko import PRE8_NAME
+from app.hko import PRE8_NAME, warning_name
 from app.senders import DryRunSender, Message, SendError, SmtpSender, mask, sender_from_env
 from app.site import GENERIC_SITE
 from app.snapshot import build_snapshot
@@ -46,21 +46,22 @@ RED = fixture("hsww_red_synth.json")
 BLACK = fixture("hsww_black_synth.json")
 PRE8 = fixture("warningInfo_pre8.json")
 
-# warnsum entries as HKO publishes them (key, name, type), with the names the preview cases use.
+# warnsum entries shaped like HKO's live feed (key, name, type): `type` is the signal's name for tropical cyclone
+# signals, only the colour for rainstorm and fire danger warnings, and absent for the others.
 W = {
-    "WTS": ("WTS", "雷暴警告", "雷暴警告"),
-    "WRAINA": ("WRAIN", "暴雨警告信號", "黃色暴雨警告信號"),
-    "WRAINR": ("WRAIN", "暴雨警告信號", "紅色暴雨警告信號"),
-    "WRAINB": ("WRAIN", "暴雨警告信號", "黑色暴雨警告信號"),
+    "WTS": ("WTS", "雷暴警告", ""),
+    "WRAINA": ("WRAIN", "暴雨警告信號", "黃色"),
+    "WRAINR": ("WRAIN", "暴雨警告信號", "紅色"),
+    "WRAINB": ("WRAIN", "暴雨警告信號", "黑色"),
     "TC1": ("WTCSGNL", "熱帶氣旋警告信號", "一號戒備信號"),
     "TC3": ("WTCSGNL", "熱帶氣旋警告信號", "三號強風信號"),
     "TC8NE": ("WTCSGNL", "熱帶氣旋警告信號", "八號東北烈風或暴風信號"),
     "TC8SE": ("WTCSGNL", "熱帶氣旋警告信號", "八號東南烈風或暴風信號"),
-    "WL": ("WL", "山泥傾瀉警告", "山泥傾瀉警告"),
+    "WL": ("WL", "山泥傾瀉警告", ""),
     "WMSGNL": ("WMSGNL", "強烈季候風信號", ""),
-    "WHOT": ("WHOT", "酷熱天氣警告", "酷熱天氣警告"),
-    "WFIREY": ("WFIRE", "火災危險警告", "黃色火災危險警告"),
-    "WFIRER": ("WFIRE", "火災危險警告", "紅色火災危險警告"),
+    "WHOT": ("WHOT", "酷熱天氣警告", ""),
+    "WFIREY": ("WFIRE", "火災危險警告", "黃色"),
+    "WFIRER": ("WFIRE", "火災危險警告", "紅色"),
 }
 
 
@@ -210,6 +211,20 @@ def test_rainstorm_signals_amber_red_black(tmp_path):
         world.poll(2)
         ((_, subject, body),) = world.take()
         assert changes(body) == [change] and action in body.splitlines()
+
+
+def test_rainstorm_and_fire_danger_warnings_have_their_whole_names(tmp_path):
+    # HKO's live feed sends only the colour as `type` for these warnings ("黑色", "紅色").
+    world = started(tmp_path)
+    world.warnsum = {**warnsum("WRAINB"), **warnsum("WFIRER")}
+    world.poll(2)
+    ((_, subject, body),) = world.take()
+    assert subject == "【示範地盤】黑色暴雨警告信號 發出 +1"
+    assert changes(body) == ["黑色暴雨警告信號 發出", "紅色火災危險警告 發出"]
+    assert "現正生效：黑色暴雨警告信號 · 紅色火災危險警告" in body.splitlines()
+    world.warnsum = warnsum("WRAINB")
+    world.poll(2)
+    assert world.subjects() == ["【示範地盤】紅色火災危險警告 取消"]
 
 
 def test_pre8_is_announced_and_ends_quietly_under_signal_8(tmp_path):
@@ -543,7 +558,7 @@ def test_what_counts_as_raising_a_level(old, new, raised):
 
 
 def state(heat, *codes):
-    warnings = {c: {"label": W[c][2] or W[c][1], "group": W[c][0]} for c in codes if c != "WTCPRE8"}
+    warnings = {c: {"label": warning_name(warnsum(c)[W[c][0]]), "group": W[c][0]} for c in codes if c != "WTCPRE8"}
     return {"heat": heat, "warnings": warnings, "pre8": "WTCPRE8" in codes}
 
 

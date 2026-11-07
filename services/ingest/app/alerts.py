@@ -19,7 +19,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import quote
 
-from app.hko import PRE8_NAME
+from app.hko import PRE8_NAME, warning_name
 from app.senders import Message, SendError, mask, sender_from_env
 from app.site import alert_recipients, email_address
 from app.snapshot import HSWW_LABEL, code_rank
@@ -62,7 +62,7 @@ def read_parts(snap):
     warnings = {}
     for item in hko.get("warnsum") or []:
         code = item["code"]
-        label = names.get(code) or (item.get("type") or item.get("name") or code).strip()
+        label = names.get(code) or warning_name(item) or code
         warnings[code] = {"label": label, "group": item.get("key") or code}
     return {
         "heat": (snap.get("hsww") or {}).get("level") or "none",
