@@ -3,6 +3,8 @@
     "name": "暴雨警告信號",
     "code": "WRAINB",
     "actionCode": "ISSUE",
-    "type": "黑色暴雨警告信號"
+    "type": "黑色",
+    "issueTime": "2026-09-08T00:05:00+08:00",
+    "updateTime": "2026-09-08T00:05:00+08:00"
   }
 }

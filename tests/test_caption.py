@@ -22,3 +22,8 @@ def test_pre8_caption_from_warning_info():
         weather_caption([], [{"code": "WTCPRE8", "contents": ["長文公報不應該出現"]}])
         == "預警八號熱帶氣旋警告信號之特別報告"
     )
+
+
+def test_caption_joins_colour_and_name_as_the_live_feed_sends_them():
+    warnings = [{"code": "WRAINR", "type": "紅色", "name": "暴雨警告信號"}]
+    assert weather_caption(warnings, []) == "紅色暴雨警告信號"
