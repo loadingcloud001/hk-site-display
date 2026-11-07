@@ -29,7 +29,21 @@ export type WeatherNow = {
   updatedAt: string;
 };
 
-export type Forecast = { date: string; iconRel: string | null; minC: number | null; maxC: number | null };
+export type Forecast = {
+  date: string;
+  iconRel: string | null;
+  minC: number | null;
+  maxC: number | null;
+  psrZh?: string | null;
+};
+
+export type Wind = {
+  placeZh: string;
+  dirZh: string | null;
+  speedKmh: number;
+  gustKmh: number | null;
+  updatedAt: string;
+};
 
 export type Display = {
   mode: "normal" | "heat" | "weather";
@@ -54,17 +68,31 @@ export type Snapshot = {
   supervisor?: SupervisorLine[];
   banner?: Banner | null;
   weather?: WeatherNow | null;
+  wind?: Wind | null;
   forecast?: Forecast | null;
+  site?: { id: string | null; known?: boolean };
 };
 
 const HK = "Asia/Hong_Kong";
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
-export function isStale(s: Snapshot, now = Date.now()): boolean {
+// `ageMs` is how long ago the screen last received a snapshot, on the browser's monotonic clock. A live screen
+// passes it, so a wrong device clock (common on cheap TV boxes) can neither hide nor fake stale data.
+export function isStale(s: Snapshot, ageMs?: number, now = Date.now()): boolean {
   if (s.stale) return true;
+  const limit = (s.staleAfterSec || 600) * 1000;
+  if (ageMs !== undefined) return ageMs > limit;
   const t = Date.parse(s.generatedAt);
   if (Number.isNaN(t)) return true;
-  return now - t > (s.staleAfterSec || 600) * 1000;
+  return now - t > limit;
+}
+
+const COMPASS = new Set(["北", "東北", "東", "東南", "南", "西南", "西", "西北"]);
+
+// HKO's compass point as the usual Chinese wind name (東 -> 東風); anything else is shown as HKO wrote it.
+export function windNameZh(dir: string | null): string {
+  if (!dir) return "風速";
+  return COMPASS.has(dir) ? `${dir}風` : dir;
 }
 
 export function railSignals(s: Snapshot): (Signal & { rel: string })[] {

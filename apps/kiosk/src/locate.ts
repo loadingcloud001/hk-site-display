@@ -19,10 +19,6 @@ export function toFix(c: { latitude: number; longitude: number; accuracy: number
   };
 }
 
-export function fixQuery(fix: Fix | null): string {
-  return fix ? `?lat=${fix.lat}&lon=${fix.lon}&acc=${fix.acc}` : "";
-}
-
 // The last fix, so a reloaded screen shows the right station at once instead of after the browser answers.
 function readCache(): Fix | null {
   try {

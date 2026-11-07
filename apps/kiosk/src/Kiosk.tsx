@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { fixQuery, useFix } from "./locate";
-import { clockNow, dateZh, type Snapshot } from "./present";
+import { Guard } from "./guard";
+import { useAutoUpdate, useWakeLock } from "./keepalive";
+import { useFix, type Fix } from "./locate";
+import { clockNow, dateZh, isStale, type Snapshot } from "./present";
 import { Screen } from "./Screen";
 
 const params = new URLSearchParams(window.location.search);
@@ -12,7 +14,11 @@ const FIXTURE = params.get("fixture");
 const SHOW_BAR = params.get("bar") !== "0";
 // ?loc=0 never asks for this screen's location; the weather then shows the site's station or 香港天文台.
 const LOCATE = LIVE && params.get("loc") !== "0";
+// ?site=<siteId> picks this screen's site file on the server: its trades and fallback stations.
+const SITE = params.get("site");
 const POLL_MS = 30_000;
+// The device clock is corrected only when it is this far from the server's, so a right clock never jitters.
+const CLOCK_SLACK_MS = 2_000;
 
 type CaseBtn = { id: string; labelZh: string };
 
@@ -24,6 +30,18 @@ const FALLBACK_CASES: CaseBtn[] = [
   { id: "tc8ne", labelZh: "八號東北" },
   { id: "rain-black", labelZh: "黑色暴雨" },
 ];
+
+function snapshotQuery(site: string | null, fix: Fix | null): string {
+  const q = new URLSearchParams();
+  if (site) q.set("site", site);
+  if (fix) {
+    q.set("lat", String(fix.lat));
+    q.set("lon", String(fix.lon));
+    q.set("acc", String(fix.acc));
+  }
+  const text = q.toString();
+  return text ? `?${text}` : "";
+}
 
 async function loadSnap(query: string): Promise<Snapshot> {
   const r = await fetch(`/api/v1/snapshot${query}`);
@@ -39,13 +57,18 @@ export function Kiosk() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [cases, setCases] = useState<CaseBtn[]>([]);
-  const [clock, setClock] = useState(clockNow);
-  const [date, setDate] = useState(dateZh);
+  const [now, setNow] = useState(Date.now);
   const [holdSim, setHoldSim] = useState(false);
   const [layout, setLayout] = useState(readLayout);
-  const query = fixQuery(useFix(LOCATE));
+  const query = snapshotQuery(SITE, useFix(LOCATE));
   // Once a preview case is requested, a late live response must never overwrite it.
   const holdSimRef = useRef(Boolean(PREVIEW && !LIVE && FIXTURE));
+  // When the last live snapshot arrived (monotonic clock), and how far the device clock is from the server's.
+  // Cheap TV boxes often boot with a wrong clock and never fix it; the screen shows the server's time instead.
+  const receivedRef = useRef<number | null>(null);
+  const offsetRef = useRef(0);
+  useWakeLock(LIVE);
+  useAutoUpdate(LIVE);
 
   useEffect(() => {
     document.documentElement.classList.toggle("live", LIVE);
@@ -53,10 +76,7 @@ export function Kiosk() {
   }, []);
 
   useEffect(() => {
-    const id = setInterval(() => {
-      setClock(clockNow());
-      setDate(dateZh());
-    }, 1000);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -77,6 +97,11 @@ export function Kiosk() {
       try {
         const s = await loadSnap(query);
         if (alive && !holdSimRef.current) {
+          receivedRef.current = performance.now();
+          const offset = Date.parse(s.generatedAt) - Date.now();
+          if (Number.isFinite(offset) && Math.abs(offset - offsetRef.current) > CLOCK_SLACK_MS) {
+            offsetRef.current = offset;
+          }
           setSnap(s);
           setErr(null);
         }
@@ -111,7 +136,7 @@ export function Kiosk() {
     const r = await fetch("/api/v1/sim", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fixture: name }),
+      body: JSON.stringify(SITE ? { fixture: name, site: SITE } : { fixture: name }),
     });
     if (!r.ok) return;
     setHoldSim(true);
@@ -144,5 +169,21 @@ export function Kiosk() {
       </div>
     ) : null;
 
-  return <Screen snap={snap} clock={clock} date={date} layout={layout} simbar={simbar} />;
+  const shown = new Date(now + offsetRef.current);
+  const received = receivedRef.current;
+  // A live screen goes stale when no snapshot has arrived for a while; a preview case only when it says so.
+  const stale = !holdSim && received !== null ? isStale(snap, performance.now() - received) : isStale(snap, 0);
+
+  return (
+    <Guard resetKey={snap.generatedAt} layout={layout}>
+      <Screen
+        snap={snap}
+        clock={clockNow(shown)}
+        date={dateZh(shown)}
+        layout={layout}
+        simbar={simbar}
+        stale={stale}
+      />
+    </Guard>
+  );
 }
