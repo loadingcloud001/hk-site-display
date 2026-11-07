@@ -13,7 +13,10 @@ HEADLINE = {
 }
 
 
-def classify(hko_codes: list[str], hsww_level: str) -> dict:
+def classify(hko_codes: list[str], hsww_level: str, extreme: bool = False) -> dict:
+    """The legacy priority band. 「極端情況」 in force is P0 whatever HKO has issued (spec: extreme conditions §5)."""
+    if extreme:
+        return {"band": "P0", "headlineZh": "「極端情況」"}
     codes = set(hko_codes or [])
     if codes & set(_CFG["P0"]):
         band = "P0"

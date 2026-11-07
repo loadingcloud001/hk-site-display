@@ -12,6 +12,7 @@ const GROUPS: { id: string; label: string }[] = [
   { id: "rain", label: "暴雨" },
   { id: "other", label: "其他天氣" },
   { id: "combo", label: "同時生效" },
+  { id: "extreme", label: "「極端情況」" },
 ];
 
 export function Gallery() {

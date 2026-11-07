@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Guard } from "./guard";
 import { useAutoUpdate, useWakeLock } from "./keepalive";
 import { useFix, type Fix } from "./locate";
-import { clockNow, dateZh, isStale, type Snapshot } from "./present";
+import { clockNow, dateZh, extremeOverdue, isStale, type Snapshot } from "./present";
 import { Screen } from "./Screen";
 
 const params = new URLSearchParams(window.location.search);
@@ -171,8 +171,12 @@ export function Kiosk() {
 
   const shown = new Date(now + offsetRef.current);
   const received = receivedRef.current;
-  // A live screen goes stale when no snapshot has arrived for a while; a preview case only when it says so.
-  const stale = !holdSim && received !== null ? isStale(snap, performance.now() - received) : isStale(snap, 0);
+  // A live screen goes stale when no snapshot has arrived for a while, or when the 「極端情況」 it shows has passed
+  // its announced end (on the server's clock); a preview case only when it says so.
+  const live = !holdSim && received !== null;
+  const stale = live
+    ? isStale(snap, performance.now() - received) || extremeOverdue(snap, shown.getTime())
+    : isStale(snap, 0);
 
   return (
     <Guard resetKey={snap.generatedAt} layout={layout}>

@@ -308,6 +308,10 @@ def test_a_message_says_nothing_the_screen_does_not(tmp_path):
         shown.append(json.dumps(world.snapshot_for(DEMO), ensure_ascii=False))
         sent += world.take()
     assert len(sent) == len(steps)
+    says_only_what_was_shown(sent, shown)
+
+
+def says_only_what_was_shown(sent, shown):
     for _, subject, body in sent:
         lines = [subject] + body.splitlines()[1:]  # the first line is the site's name and the time
         for line in lines:
@@ -317,6 +321,60 @@ def test_a_message_says_nothing_the_screen_does_not(tmp_path):
                 line = line.replace(word, " ")
             for piece in re.split(r"[\s·：（）【】+]+", line):
                 assert not piece or any(piece in text for text in shown), (piece, body)
+
+
+# --- While 「極端情況」 is in force ----------------------------------------------------------------------------------
+
+
+class ExtremeWorld(World):
+    """The same world, with the operator's 「極端情況」 switch as the screens get it (app.main._live_snapshot)."""
+
+    extreme = None
+
+    def snapshot_for(self, site):
+        site = site or GENERIC_SITE
+        return build_snapshot(
+            self.hsww, self.warnsum, self.info, {}, site, SCHEDULE, ICONS, now=self.now, extreme=self.extreme
+        )
+
+
+def announced(start, hours=6):
+    return {"startsAt": start.isoformat(), "endsAt": (start + timedelta(hours=hours)).isoformat(), "setAt": None}
+
+
+def test_switching_extreme_conditions_on_or_off_sends_nothing(tmp_path):
+    # Alerts follow the heat stress warning and HKO's warnings only. An alert for the switch is a follow-up.
+    world = ExtremeWorld(tmp_path)
+    world.poll(2)
+    world.extreme = announced(world.now)
+    world.poll(5)
+    world.extreme = None
+    world.poll(5)
+    assert world.take() == []
+
+
+def test_during_extreme_conditions_a_message_shows_the_screen_as_it_is(tmp_path):
+    world = ExtremeWorld(tmp_path)
+    world.extreme = announced(START)  # 09:00 to 15:00
+    world.poll(2)
+    assert world.take() == []
+    shown, sent = [], []
+    for hsww, warn in ((NO_HSWW, warnsum("TC3")), (AMBER, warnsum("TC8NE", "WRAINB"))):
+        world.hsww, world.warnsum = hsww, warn
+        world.poll(2)
+        snap = world.snapshot_for(DEMO)
+        assert snap["display"]["mode"] == "extreme"
+        shown.append(json.dumps(snap, ensure_ascii=False))
+        ((_, subject, body),) = world.take()
+        sent.append((None, subject, body))
+        assert body.split("告示屏：\n")[1].split("\n\n")[0].splitlines() == [
+            "留在原來的地點或安全的地點",
+            "而非立即啟程往工作地點上班",
+            "「極端情況」 · 09:00 生效 · 15:00 結束",
+            "主管注意：立即暫停僱員在戶外及空曠地方的工作，並安排僱員到安全地方暫避（「極端情況」）",
+        ]
+    assert [subject for _, subject, _ in sent][0].endswith("三號強風信號 發出")
+    says_only_what_was_shown(sent, shown)
 
 
 # --- Glitches and flapping --------------------------------------------------------------------------------------

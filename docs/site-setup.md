@@ -8,6 +8,8 @@ For whoever installs a gate screen. The work takes about an hour per site:
 4. check it;
 5. optionally, list the supervisors who get an email when the screen changes (§8).
 
+Section 9 is for the service operator: switching every screen to 「極端情況」.
+
 `YOUR-DOMAIN` below is your server's address, for example the one in the README's live demo.
 
 ## 1. What you need
@@ -114,10 +116,11 @@ Chrome is not available for Android TV, so use a kiosk browser app, for example 
 | 資料過期 — 請以我的天文台為準 | No fresh warning data for over 10 minutes. The screen still shows the last data | As above. It clears by itself |
 | 畫面出錯 — 請以我的天文台為準 | The page hit an error. It redraws itself with the next data | If it stays for more than a minute, restart the player and report it |
 | Tiles show 輕勞動 / 中等勞動 / 重勞動 / 極重勞動 instead of trade names | The address's `?site=` does not match a site file that works | Check the address, and `siteProblems` in `/api/v1/health` |
+| 「極端情況」 with two times, and 留在原來的地點或安全的地點 | The Government has announced 「極端情況」, and the operator has switched it on. It ends by itself at the second time | Follow the instruction and the site's own arrangements. If it looks wrong, call the operator (§9) |
 
 ## 7. Keeping it running
 
-- **Monitoring.** Point an uptime monitor (many are free) at `https://YOUR-DOMAIN/api/v1/health`. It answers 503, which a monitor reports as down, when the warning data is stale, the data fetching has stopped, or a site file has a mistake.
+- **Monitoring.** Point an uptime monitor (many are free) at `https://YOUR-DOMAIN/api/v1/health`. It answers 503, which a monitor reports as down, when the warning data is stale, the data fetching has stopped, a site file has a mistake, supervisor alerts cannot go out (§8), or the 「極端情況」 switch cannot be read or saved (§9).
 - **Updates.** A new version reaches every screen within 5 minutes. Nobody needs to visit.
 - **Official wording.** A weekly automatic check compares every instruction with its Labour Department or HKO source (README, *Weekly official-source check*). Nothing to do on site.
 - **Changing trades.** Edit the site's file and restart the service as in step 2. The screens pick up the change within 30 seconds.
@@ -150,7 +153,8 @@ https://YOUR-DOMAIN/?site=s7k2
 - **What does not:**
   - the Labour Department's hourly reminder;
   - a thunderstorm warning being extended;
-  - the weather, wind and forecast.
+  - the weather, wind and forecast;
+  - the 「極端情況」 switch (§9) going on or off. While it is on, an email shows the screen as it is, with the 「極端情況」 instruction.
 - **Timing.** The email arrives 1–2 minutes after the official change, because the service waits for two readings in a row. The screen and MyObservatory stay the authority.
 - **How many.** A burst of quick changes is merged: after 6 messages close together, cancellations wait (about 10 minutes at most) and go out together with the next message. A new warning is never held back.
 - **The words.** An email repeats only what the screen shows. It adds no instructions of its own.
@@ -214,3 +218,65 @@ docker compose exec ingest python -m app.alerts --test s7k2
 | `alerts.problems`: `ALERT_STATE_FILE cannot be written` | The `alert-state` volume is missing or read-only | Check `docker-compose.yml`. Until it is fixed, a restart may miss a change |
 
 The service keeps what each site was last told on the `alert-state` Docker volume, so a restart or an update never sends an email again. Deleting the volume (`docker compose down -v`) is safe: the next start remembers the current state without sending anything.
+
+## 9. 「極端情況」 (extreme conditions)
+
+For the service operator, not for each site. After a super typhoon or another large-scale disaster, the Government may announce 「極端情況」 for the whole territory, for a stated period. No data feed carries it, so the operator switches it on, and every screen on the server shows the Labour Department's instruction for it until the announced end. Design: [the spec](superpowers/specs/2026-11-07-extreme-conditions-design.md).
+
+**Who may switch it**
+
+- Only the service operator, who holds the admin key. One switch changes every site's screens.
+- Only to mirror a Government announcement of 「極端情況」, with the times it announces. Never for a site's own emergency or anything else: the screens would then quote the Code of Practice for an announcement that does not exist.
+- Site staff never switch it. If the screens look wrong, they call the operator.
+
+**Set up the key, once**
+
+1. Generate a random key of at least 32 characters, with a password manager's generator or `python3 -c "import secrets; print(secrets.token_urlsafe(32))"`. Keep it in the team's password manager; we use Bitwarden Secrets Manager, key `HK_SITE_DISPLAY_ADMIN_KEY`. A shorter key leaves the switch off.
+2. On the server, put it in the untracked `.env` without it showing on screen or in the shell history, and recreate the service. `docker compose restart ingest` is not enough, because it keeps the old environment.
+   ```bash
+   cd ~/hk-site-display
+   touch .env && chmod 600 .env && sed -i '/^ADMIN_KEY=/d' .env
+   read -rs -p 'Admin key: ' KEY && echo && printf 'ADMIN_KEY=%s\n' "$KEY" >> .env; unset KEY
+   docker compose up -d ingest
+   ```
+3. Check: `https://YOUR-DOMAIN/api/v1/health` shows `"extreme": {"status": "off"}` and `"extremeProblem": null`, and `extreme` (below) answers `{"status":"off"}`.
+
+**The commands**
+
+In a bash terminal (macOS, Linux, or Git Bash or WSL on Windows), once per terminal:
+
+```bash
+read -rs -p 'Admin key: ' ADMIN_KEY; echo
+extreme() { printf 'Authorization: Bearer %s\n' "$ADMIN_KEY" | curl -sS -H @- -H 'Content-Type: application/json' "$@" https://YOUR-DOMAIN/api/v1/admin/extreme; echo; }
+```
+
+With the Bitwarden CLI, `bws run -- bash` opens a shell with the key in `$HK_SITE_DISPLAY_ADMIN_KEY`; there, use `ADMIN_KEY=$HK_SITE_DISPLAY_ADMIN_KEY` instead of the `read` line. Then:
+
+| To | Run |
+|---|---|
+| See the state, or test the key | `extreme` |
+| Switch on now, until the announced end | `extreme -X PUT -d '{"endsAt": "2026-11-07T19:00"}'` |
+| Switch on later, with both announced times | `extreme -X PUT -d '{"startsAt": "2026-11-07T17:00", "endsAt": "2026-11-07T19:00"}'` |
+| Extend it, when the Government announces a new end | `extreme -X PUT -d '{"endsAt": "2026-11-07T21:00"}'` (the start stays as it was) |
+| End it early, when the Government does | `extreme -X DELETE` |
+
+- Times are Hong Kong time, with the date: `2026-11-07T19:00` or `2026-11-07 19:00`.
+- When the announcement gives the start as an event rather than a clock time, for example a signal being replaced, switch on when it happens.
+- Otherwise leave it to end by itself at the announced end. The screens show 「極端情況」 結束 for 10 minutes after the end, whether it ended by itself or by `DELETE`.
+- `DELETE` before the start withdraws it, and the screens never change. That makes a safe rehearsal: switch on with a start a few minutes ahead, check that the answer says `scheduled`, then `DELETE`.
+
+**What the answers mean**
+
+| Answer | Meaning |
+|---|---|
+| `"status":"active"` | In force now, until `endsAt`. The screens change within 30 seconds |
+| `"status":"scheduled"`, `"ended"` or `"off"` | Starts later; has ended; nothing recorded |
+| A reason, such as `endsAt ... has already passed` (400) | The times were refused. Nothing changed |
+| `admin-key-required` (401) | Missing or wrong key |
+| `admin-disabled` (403) | The server has no `ADMIN_KEY`, or one shorter than 32 characters |
+| `https-required` (403) | The address was `http://`. Use `https://`, then replace the key: it has crossed the network in clear |
+| `not saved, nothing changed` (503) | The server could not save the switch. See `extremeProblem` in `/api/v1/health` |
+
+**If the key may have leaked**, or was ever sent over `http://`: generate a new one, update the password manager, and repeat step 2. The old key stops working when the service is recreated.
+
+The switch is kept on its own Docker volume, `extreme-state`, so a restart or an update never changes it. Deleting that volume (`docker compose down -v`) switches 「極端情況」 off.
