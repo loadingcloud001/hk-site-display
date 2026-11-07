@@ -14,6 +14,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.alerts import engine_from_env
 from app.feeds import Feed, FeedSet
 from app.sim_cases import ALIASES, CASE_IDS, build_case, list_cases, list_official_icons
 from app.site import GENERIC_SITE, load_sites
@@ -41,8 +42,16 @@ SCHEDULE = json.loads((ROOT / "config/rest_schedule.json").read_text(encoding="u
 ICONS = json.loads((ROOT / "config/official_icons.json").read_text(encoding="utf-8"))
 
 log = logging.getLogger("hk_site_display")
+if not log.handlers:  # uvicorn configures only its own loggers; without this, INFO lines such as alerts are lost
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    log.addHandler(_handler)
+    log.setLevel(logging.INFO)
 for _problem in SITE_PROBLEMS:
-    log.error("site config left out: %s", _problem)
+    log.error("site config problem: %s", _problem)
+
+# Supervisor alerts (app.alerts): SMTP settings, ALERT_OPERATOR and the state file come from the environment.
+ALERTS = engine_from_env(os.environ, SITES, ROOT, stale_after=STALE_AFTER)
 
 
 def _get_json(client, url, params=None):
@@ -103,6 +112,11 @@ def _poll(stop):
             FEEDS.refresh_due()
         except Exception:  # one bad cycle must never stop the screens' data for good
             log.exception("feed refresh failed")
+        try:
+            now = datetime.now(HKT)
+            ALERTS.check(now, feed_marks(), snapshot_for(now))
+        except Exception:  # alerts must never stop the screens' data either
+            log.exception("alert check failed")
         POLLER["last"] = time.monotonic()
         stop.wait(POLL_SEC)
 
@@ -130,6 +144,33 @@ def _stale(now):
     return any(age is None or age >= STALE_AFTER for age in ages)
 
 
+def _live_snapshot(site, now, position=None):
+    return build_snapshot(
+        FEEDS.value("hsww") or {},
+        FEEDS.value("warnsum") or {},
+        FEEDS.value("warningInfo") or {},
+        FEEDS.value("rhrread") or {},
+        site,
+        SCHEDULE,
+        ICONS,
+        fnd=FEEDS.value("fnd") or {},
+        now=now,
+        stale=_stale(now),
+        position=position,
+        wind=FEEDS.value("wind"),
+    )
+
+
+def snapshot_for(now):
+    """For the alerts: a site's live snapshot as a screen without a position sees it (None: any site)."""
+    return lambda site: _live_snapshot(site or GENERIC_SITE, now)
+
+
+def feed_marks():
+    """When each feed last fetched successfully. The alerts read a feed again only after a new fetch."""
+    return {name: feed.fetched_at for name, feed in FEEDS.feeds.items()}
+
+
 def _poller_ok():
     if not ENABLE_POLLER:
         return True
@@ -146,7 +187,8 @@ def healthz():
 
 @app.get("/api/v1/health")
 def health():
-    """For an uptime monitor: 503 when the warning feeds are stale, the poller has stopped or a site file is bad."""
+    """For an uptime monitor: 503 when the warning feeds are stale, the poller has stopped, a site file has a
+    mistake, or supervisor alerts are misconfigured or have not been going out for 15 minutes."""
     now = datetime.now(HKT)
     stale = _stale(now)
     poller = _poller_ok()
@@ -155,12 +197,13 @@ def health():
         age = FEEDS.age(name, now)
         feeds[name] = {"ageSec": None if age is None else round(age), "ok": feed.ok}
     body = {
-        "ok": poller and not stale and not SITE_PROBLEMS,
+        "ok": poller and not stale and not SITE_PROBLEMS and ALERTS.healthy(now),
         "stale": stale,
         "poller": poller,
         "feeds": feeds,
         "sites": len(SITES),
         "siteProblems": SITE_PROBLEMS,
+        "alerts": ALERTS.status(now),
     }
     return JSONResponse(body, status_code=200 if body["ok"] else 503)
 
@@ -193,22 +236,7 @@ def snapshot(
         FEEDS.refresh_due()
     if FEEDS.value("hsww") is None and FEEDS.value("warnsum") is None:
         raise HTTPException(status_code=503, detail="no-data")
-    now = datetime.now(HKT)
-    stale = _stale(now)
-    snap = build_snapshot(
-        FEEDS.value("hsww") or {},
-        FEEDS.value("warnsum") or {},
-        FEEDS.value("warningInfo") or {},
-        FEEDS.value("rhrread") or {},
-        _site(site),
-        SCHEDULE,
-        ICONS,
-        fnd=FEEDS.value("fnd") or {},
-        now=now,
-        stale=stale,
-        position=parse_position(lat, lon, acc),
-        wind=FEEDS.value("wind"),
-    )
+    snap = _live_snapshot(_site(site), datetime.now(HKT), parse_position(lat, lon, acc))
     snap["source"] = "live"
     return snap
 
