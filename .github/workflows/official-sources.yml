@@ -1,0 +1,28 @@
+name: official-sources
+
+# Every week: is every quote the screen uses still in its official LD/HKO source, have the Labour
+# Department PDFs changed since they were verified, and does the HKO station table still match HKO?
+# A failure means a person re-verifies (spec §9); GitHub emails the repository owner.
+on:
+  schedule:
+    - cron: "0 1 * * 1" # Monday 01:00 UTC = 09:00 Hong Kong
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: pip install "pypdf[crypto]" fonttools
+      - name: Quotes and Labour Department PDFs
+        run: python scripts/check_official_sources.py
+      - name: HKO station table
+        if: ${{ !cancelled() }}
+        run: python scripts/fetch_hko_stations.py --check
