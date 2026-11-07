@@ -1,6 +1,7 @@
 {
   "source": "https://www.hko.gov.hk/en/cis/stn.htm",
-  "checked": "2026-10-06",
+  "windSource": "https://www.hko.gov.hk/en/wxinfo/ts/display_element_ff.htm",
+  "checked": "2026-11-07",
   "stations": [
     {
       "name": "京士柏",
@@ -190,6 +191,248 @@
       "code": "PLC",
       "lat": 22.47528,
       "lon": 114.2375
+    }
+  ],
+  "windStations": [
+    {
+      "name": "中環碼頭",
+      "nameEn": "Central Pier",
+      "code": "CP1",
+      "lat": 22.28889,
+      "lon": 114.15583,
+      "elevation": 19
+    },
+    {
+      "name": "赤鱲角",
+      "nameEn": "Hong Kong International Airport",
+      "code": "HKA",
+      "lat": 22.30944,
+      "lon": 113.92194,
+      "elevation": 6
+    },
+    {
+      "name": "長洲",
+      "nameEn": "Cheung Chau",
+      "code": "CCH",
+      "lat": 22.20111,
+      "lon": 114.02667,
+      "elevation": 72
+    },
+    {
+      "name": "長洲泳灘",
+      "nameEn": "Cheung Chau Beach",
+      "code": "CCB",
+      "lat": 22.21083,
+      "lon": 114.02917,
+      "elevation": 27
+    },
+    {
+      "name": "青洲",
+      "nameEn": "Green Island",
+      "code": "GI",
+      "lat": 22.285,
+      "lon": 114.11278,
+      "elevation": 88
+    },
+    {
+      "name": "香港航海學校",
+      "nameEn": "Hong Kong Sea School",
+      "code": "HSS",
+      "lat": null,
+      "lon": null,
+      "elevation": null
+    },
+    {
+      "name": "啟德",
+      "nameEn": "Kai Tak",
+      "code": "SE",
+      "lat": 22.30972,
+      "lon": 114.21333,
+      "elevation": 3
+    },
+    {
+      "name": "京士柏",
+      "nameEn": "King's Park",
+      "code": "KP",
+      "lat": 22.31194,
+      "lon": 114.17278,
+      "elevation": 65
+    },
+    {
+      "name": "南丫島",
+      "nameEn": "Lamma Island",
+      "code": "LAM",
+      "lat": 22.22611,
+      "lon": 114.10861,
+      "elevation": 7
+    },
+    {
+      "name": "流浮山",
+      "nameEn": "Lau Fau Shan",
+      "code": "LFS",
+      "lat": 22.46889,
+      "lon": 113.98361,
+      "elevation": 31
+    },
+    {
+      "name": "昂坪",
+      "nameEn": "Ngong Ping",
+      "code": "NGP",
+      "lat": 22.25861,
+      "lon": 113.91278,
+      "elevation": 593
+    },
+    {
+      "name": "北角",
+      "nameEn": "North Point",
+      "code": "NP",
+      "lat": 22.29444,
+      "lon": 114.19972,
+      "elevation": 26
+    },
+    {
+      "name": "坪洲",
+      "nameEn": "Peng Chau",
+      "code": "PEN",
+      "lat": 22.29111,
+      "lon": 114.04333,
+      "elevation": 34
+    },
+    {
+      "name": "西貢",
+      "nameEn": "Sai Kung",
+      "code": "SKG",
+      "lat": 22.37556,
+      "lon": 114.27444,
+      "elevation": 4
+    },
+    {
+      "name": "沙洲",
+      "nameEn": "Sha Chau",
+      "code": "SC",
+      "lat": 22.34583,
+      "lon": 113.89111,
+      "elevation": 31
+    },
+    {
+      "name": "沙田",
+      "nameEn": "Sha Tin",
+      "code": "SHA",
+      "lat": 22.4025,
+      "lon": 114.21,
+      "elevation": 6
+    },
+    {
+      "name": "石崗",
+      "nameEn": "Shek Kong",
+      "code": "SEK",
+      "lat": 22.43611,
+      "lon": 114.08472,
+      "elevation": 16
+    },
+    {
+      "name": "赤柱",
+      "nameEn": "Bluff Head",
+      "code": "BHD",
+      "lat": 22.1975,
+      "lon": 114.21194,
+      "elevation": 94
+    },
+    {
+      "name": "天星碼頭",
+      "nameEn": "Star Ferry (Kowloon)",
+      "code": "SF",
+      "lat": 22.29306,
+      "lon": 114.16861,
+      "elevation": 18
+    },
+    {
+      "name": "打鼓嶺",
+      "nameEn": "Ta Kwu Ling",
+      "code": "TKL",
+      "lat": 22.52861,
+      "lon": 114.15667,
+      "elevation": 15
+    },
+    {
+      "name": "大美督",
+      "nameEn": "Tai Mei Tuk",
+      "code": "PLC",
+      "lat": 22.47528,
+      "lon": 114.2375,
+      "elevation": 51
+    },
+    {
+      "name": "大埔滘",
+      "nameEn": "Tai Po Kau",
+      "code": "TPK",
+      "lat": 22.4425,
+      "lon": 114.18389,
+      "elevation": 12
+    },
+    {
+      "name": "塔門",
+      "nameEn": "Tap Mun East",
+      "code": "TME",
+      "lat": 22.46833,
+      "lon": 114.36306,
+      "elevation": 48
+    },
+    {
+      "name": "大老山",
+      "nameEn": "Tate's Cairn",
+      "code": "TC",
+      "lat": 22.35778,
+      "lon": 114.21778,
+      "elevation": 572
+    },
+    {
+      "name": "將軍澳",
+      "nameEn": "Tseung Kwan O",
+      "code": "JKB",
+      "lat": 22.31583,
+      "lon": 114.25556,
+      "elevation": 38
+    },
+    {
+      "name": "青衣",
+      "nameEn": "Shell Oil Depot",
+      "code": "SHL",
+      "lat": 22.34667,
+      "lon": 114.08639,
+      "elevation": 43
+    },
+    {
+      "name": "屯門",
+      "nameEn": "Tuen Mun Government Offices",
+      "code": "TUN",
+      "lat": 22.39056,
+      "lon": 113.97667,
+      "elevation": 69
+    },
+    {
+      "name": "橫瀾島",
+      "nameEn": "Waglan Island",
+      "code": "WGL",
+      "lat": 22.18222,
+      "lon": 114.30333,
+      "elevation": 56
+    },
+    {
+      "name": "濕地公園",
+      "nameEn": "Wetland Park",
+      "code": "WLP",
+      "lat": 22.46667,
+      "lon": 114.00889,
+      "elevation": 4
+    },
+    {
+      "name": "黃竹坑",
+      "nameEn": "Wong Chuk Hang",
+      "code": "HKS",
+      "lat": 22.24778,
+      "lon": 114.17361,
+      "elevation": 5
     }
   ]
 }

@@ -7,9 +7,10 @@ from app.hko import PRE8_NAME, active_codes, parse_warning_info, parse_warnsum, 
 from app.hsww import parse_hkhi_icon
 from app.priority import classify
 from app.rest import compute_rest
-from app.site import WORKLOAD_ZH, normal_workloads, tile_trades, weather_station
+from app.site import WORKLOAD_ZH, normal_workloads, tile_trades, weather_station, wind_station
 from app.state import state_tone, supervisor_lines, tc_signal_code, winning_weather_code
 from app.weather import parse_current, parse_forecast, parse_time, wx_icon_rel
+from app.wind import current_wind
 
 HKT = timezone(timedelta(hours=8))
 ACTIONS = validate_actions(load_actions())
@@ -163,6 +164,7 @@ def build_snapshot(
     now=None,
     stale=False,
     position=None,
+    wind=None,
 ):
     now = now or datetime.now(HKT)
     hsww = parse_hkhi_icon(hsww_raw or {})
@@ -215,6 +217,8 @@ def build_snapshot(
         "tone": state_tone(display["mode"], weather_code, hsww["level"]),
         "site": {
             "id": site.get("siteId"),
+            # False when ?site= named no site file: the tiles then show every workload level.
+            "known": bool(site.get("siteId")),
             "nameZh": site.get("nameZh"),
             "tradeZh": trade.get("labelZh") or "",
             "workloadZh": WORKLOAD_ZH.get(workload, workload),
@@ -236,5 +240,6 @@ def build_snapshot(
         "supervisor": supervisor,
         "banner": build_banner(hsww, events, info, now, code_rank, stale),
         "weather": parse_current(rhrread, weather_station(site), now, position),
+        "wind": current_wind(wind, wind_station(site), now, position),
         "forecast": parse_forecast(fnd, now),
     }

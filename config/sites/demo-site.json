@@ -4,6 +4,7 @@
   "nameEn": "Demo Site",
   "defaultWorkload": "very_heavy",
   "environment": "outdoor",
+  "windStation": "啟德",
   "restAdjustMinutes": 0,
   "primaryTrades": [
     { "id": "bar-fixer", "labelZh": "紮鐵", "workload": "very_heavy" },

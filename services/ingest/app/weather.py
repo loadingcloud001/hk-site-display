@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[3]
 WX_ICONS = json.loads((ROOT / "config" / "wx_icons.json").read_text(encoding="utf-8"))["icons"]
 WEATHER_MAX_AGE = timedelta(minutes=90)
 FORECAST_MAX_AGE = timedelta(hours=12)
+PSR_VALUES = ("高", "中高", "中", "中低", "低")
 
 
 def parse_time(value):
@@ -92,5 +93,7 @@ def parse_forecast(fnd, now):
                 "iconRel": wx_icon_rel(day.get("ForecastIcon")),
                 "minC": (day.get("forecastMintemp") or {}).get("value"),
                 "maxC": (day.get("forecastMaxtemp") or {}).get("value"),
+                # 顯著降雨概率 (PSR): 高, 中高, 中, 中低 or 低 (HKO Open Data API documentation).
+                "psrZh": day.get("PSR") if day.get("PSR") in PSR_VALUES else None,
             }
     return None
