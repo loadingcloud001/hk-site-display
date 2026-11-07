@@ -10,9 +10,14 @@ services:
       ENABLE_LIVE_POLLER: "true"
       # The site a screen without ?site= shows; empty means config/sites/demo-site.json.
       DEFAULT_SITE: "${DEFAULT_SITE:-}"
+      # The 「極端情況」 switch's admin key, from the untracked .env (kept in Bitwarden). Empty turns the switch off.
+      ADMIN_KEY: "${ADMIN_KEY:-}"
+      STATE_DIR: /app/state
     volumes:
       # Site files are read from the server, so changing a site's trades needs a restart, not a rebuild.
       - ./config/sites:/app/config/sites:ro
+      # The 「極端情況」 switch, kept across restarts and rebuilds.
+      - state:/app/state
     healthcheck:
       # 503 when the feed poller has stopped finishing its cycles.
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=5)"]
@@ -42,3 +47,6 @@ services:
     depends_on:
       - ingest
       - web
+
+volumes:
+  state:

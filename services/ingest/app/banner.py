@@ -1,6 +1,8 @@
 """Change banner: 10 minutes after a warning is issued or cancelled. Stateless by design."""
 from datetime import timedelta
 
+from app.extreme import CODE as EXTREME_CODE
+from app.extreme import NAME as EXTREME_NAME
 from app.hko import PRE8_NAME
 from app.weather import HKT, parse_time
 
@@ -15,11 +17,28 @@ def _recent(at, now):
     return at is not None and -BANNER_AHEAD <= now - at <= BANNER_AFTER
 
 
-def build_banner(hsww, events, info, now, rank, stale=False):
-    """Most severe recent issue/cancel event. `rank(code)` gives severity, lower is more severe."""
+def _extreme_events(extreme, now, rank):
+    """「極端情況」 生效 after its start, and 結束 after its end, each for 10 minutes. Never ahead of time: the
+    centre only changes at the start, so the banner must not announce it earlier."""
+    if not extreme:
+        return []
+    starts, ends = parse_time(extreme.get("startsAt")), parse_time(extreme.get("endsAt"))
+    out = []
+    if starts is not None and ends is not None and starts <= now < ends and now - starts <= BANNER_AFTER:
+        out.append((rank(EXTREME_CODE), starts, "issue", EXTREME_CODE, f"{EXTREME_NAME} 生效"))
+    if ends is not None and ends <= now and now - ends <= BANNER_AFTER:
+        out.append((rank(EXTREME_CODE), ends, "cancel", EXTREME_CODE, f"{EXTREME_NAME} 結束"))
+    return out
+
+
+def build_banner(hsww, events, info, now, rank, stale=False, extreme=None):
+    """Most severe recent issue/cancel event. `rank(code)` gives severity, lower is more severe.
+
+    `extreme` is the recorded 「極端情況」 announcement, whatever its status.
+    """
     if stale:
         return None
-    candidates = []
+    candidates = _extreme_events(extreme, now, rank)
     at = parse_time(hsww.get("effectiveAt"))
     if _recent(at, now):
         kind = hsww.get("messageKind")

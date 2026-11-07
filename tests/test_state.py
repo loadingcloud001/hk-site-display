@@ -46,3 +46,8 @@ def test_supervisor_line_for_signal_3():
 def test_tc_signal_code():
     assert tc_signal_code(["WTCPRE8", "TC3"]) == "TC3"
     assert tc_signal_code(["WRAINR"]) is None
+
+
+def test_extreme_conditions_have_their_own_tone():
+    assert state_tone("extreme", "TC10", "black") == "extreme"
+    assert state_tone("extreme", None, "none") == "extreme"

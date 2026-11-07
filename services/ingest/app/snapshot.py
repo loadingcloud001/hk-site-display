@@ -1,7 +1,11 @@
 from datetime import datetime, timedelta, timezone
 
-from app.actions import load_actions, note_text, validate_actions, weather_by_code
+from app.actions import extreme_wording, load_actions, note_text, validate_actions, weather_by_code
 from app.banner import build_banner
+from app.extreme import CODE as EXTREME_CODE
+from app.extreme import NAME as EXTREME_NAME
+from app.extreme import active as extreme_active
+from app.extreme import when_zh
 from app.heat import build_rest_tiles, normal_rest_lines
 from app.hko import PRE8_NAME, active_codes, parse_warning_info, parse_warnsum, parse_warnsum_events
 from app.hsww import parse_hkhi_icon
@@ -15,6 +19,7 @@ from app.wind import current_wind
 HKT = timezone(timedelta(hours=8))
 ACTIONS = validate_actions(load_actions())
 WEATHER = weather_by_code(ACTIONS)
+EXTREME = extreme_wording(ACTIONS)
 
 P0 = {"TC8NE", "TC8SE", "TC8NW", "TC8SW", "TC8", "TC9", "TC10", "WRAINB", "WL"}
 P1 = {"TC3", "WRAINR", "WTS", "WTCPRE8"}
@@ -30,6 +35,8 @@ HSWW_LABEL = {
 
 def code_rank(code: str) -> int:
     c = code or ""
+    if c == EXTREME_CODE:  # 「極端情況」 outranks every HKO warning (extreme conditions spec §5)
+        return -1
     if c == "TC10":
         return 0
     if c == "TC9":
@@ -129,10 +136,29 @@ def _heat_display(hsww):
     return {"mode": "heat", "main": None, "sub": [], "meta": meta, "heroRel": hsww.get("iconRel")}
 
 
+def _extreme_notice(ann, now):
+    """What the screen shows in place of an icon, which 「極端情況」 does not have: its name and the announced
+    period. 生效 and 結束 are the Code of Practice's own words for it."""
+    starts, ends = datetime.fromisoformat(ann["startsAt"]), datetime.fromisoformat(ann["endsAt"])
+    return {
+        "nameZh": EXTREME_NAME,
+        "startsAt": ann["startsAt"],
+        "endsAt": ann["endsAt"],
+        "startZh": when_zh(starts, now),
+        "endZh": when_zh(ends, now),
+    }
+
+
+def _extreme_display(notice):
+    # `meta` repeats the notice for a kiosk deployed before this change, which knows no `extreme` field.
+    meta = f"{notice['nameZh']} · {notice['startZh']} 生效 · {notice['endZh']} 結束"
+    return {"mode": "extreme", "main": EXTREME["main"], "sub": list(EXTREME["sub"]), "meta": meta, "heroRel": None}
+
+
 def _legacy_fields(display, rest, hsww):
     """`action` / `actionSub` for the kiosk deployed before this change."""
     mode = display["mode"]
-    if mode == "weather":
+    if mode in ("weather", "extreme"):
         return {"action": display["main"], "actionSub": (display["sub"] or [display["meta"] or ""])[0]}
     if mode == "heat":
         if rest["kind"] == "suspend":
@@ -165,8 +191,11 @@ def build_snapshot(
     stale=False,
     position=None,
     wind=None,
+    extreme=None,
 ):
+    """`extreme` is the recorded 「極端情況」 announcement (app.extreme), in force or not; None when there is none."""
     now = now or datetime.now(HKT)
+    in_force = extreme_active(extreme, now)
     hsww = parse_hkhi_icon(hsww_raw or {})
     warnings = parse_warnsum(warnsum or {})
     events = parse_warnsum_events(warnsum or {})
@@ -175,7 +204,7 @@ def build_snapshot(
     for item in info:
         if item["code"] == "WTCPRE8" and "WTCPRE8" not in codes:
             codes.append("WTCPRE8")
-    pri = classify(codes, hsww["level"])
+    pri = classify(codes, hsww["level"], extreme=bool(in_force))
     workload = site.get("defaultWorkload", "very_heavy")
     rest = compute_rest(
         schedule, site.get("environment", "outdoor"), hsww["level"], workload, site.get("restAdjustMinutes", 0)
@@ -189,9 +218,14 @@ def build_snapshot(
     signals = build_signals(hsww, warnings, codes, icons_map)
     labels = {s["code"]: s["labelZh"] for s in signals}
 
+    # 「極端情況」 first, then the weather order, then heat stress (state.py). Every warning in force stays in `signals`.
     weather_code = winning_weather_code(codes)
     rest_tiles, notes, supervisor = [], [], []
-    if weather_code:
+    notice = _extreme_notice(in_force, now) if in_force else None
+    if notice:
+        display = _extreme_display(notice)
+        supervisor = [{"text": EXTREME["supervisor"], "fromZh": EXTREME_NAME}]
+    elif weather_code:
         display = _weather_display(weather_code, warnings, info, icons_map, codes)
     elif hsww.get("inForce"):
         display = _heat_display(hsww)
@@ -205,7 +239,7 @@ def build_snapshot(
             "meta": None,
             "heroRel": IDLE_HERO,
         }
-    if display["mode"] != "weather":
+    if display["mode"] in ("normal", "heat"):
         supervisor = supervisor_lines(ACTIONS, codes, labels)
     display.update(_legacy_fields(display, rest, hsww))
 
@@ -233,12 +267,13 @@ def build_snapshot(
         },
         "signals": signals,
         "display": display,
+        "extreme": notice,
         "priority": pri,
         "rest": _legacy_rest(rest),
         "restTiles": rest_tiles,
         "notes": notes,
         "supervisor": supervisor,
-        "banner": build_banner(hsww, events, info, now, code_rank, stale),
+        "banner": build_banner(hsww, events, info, now, code_rank, stale, extreme),
         "weather": parse_current(rhrread, weather_station(site), now, position),
         "wind": current_wind(wind, wind_station(site), now, position),
         "forecast": parse_forecast(fnd, now),

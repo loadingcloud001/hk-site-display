@@ -18,3 +18,5 @@ Thumbs.db
 # Real site files live on the server only (docs/site-setup.md); only the demo is in git.
 config/sites/*
 !config/sites/demo-site.json
+# The 「極端情況」 switch when the service runs outside Docker (STATE_DIR).
+state/

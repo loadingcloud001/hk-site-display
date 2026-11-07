@@ -10,10 +10,11 @@ from pathlib import Path
 from typing import Optional
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app import extreme
 from app.feeds import Feed, FeedSet
 from app.sim_cases import ALIASES, CASE_IDS, build_case, list_cases, list_official_icons
 from app.site import GENERIC_SITE, load_sites
@@ -43,6 +44,14 @@ ICONS = json.loads((ROOT / "config/official_icons.json").read_text(encoding="utf
 log = logging.getLogger("hk_site_display")
 for _problem in SITE_PROBLEMS:
     log.error("site config left out: %s", _problem)
+
+# The 「極端情況」 switch (app/extreme.py). Its state lives in STATE_DIR, a Docker volume, so it survives restarts.
+# ADMIN_KEY comes from the server's untracked .env (kept in Bitwarden); without it the admin endpoints are off.
+STATE_DIR = Path(os.environ.get("STATE_DIR") or ROOT / "state")
+ADMIN_KEY = extreme.usable_key(os.environ.get("ADMIN_KEY"))
+EXTREME = extreme.ExtremeStore(STATE_DIR)
+if ADMIN_KEY:
+    EXTREME.check_writable()
 
 
 def _get_json(client, url, params=None):
@@ -146,7 +155,8 @@ def healthz():
 
 @app.get("/api/v1/health")
 def health():
-    """For an uptime monitor: 503 when the warning feeds are stale, the poller has stopped or a site file is bad."""
+    """For an uptime monitor: 503 when the warning feeds are stale, the poller has stopped, a site file is bad or
+    the 「極端情況」 switch cannot read or save its state."""
     now = datetime.now(HKT)
     stale = _stale(now)
     poller = _poller_ok()
@@ -154,13 +164,17 @@ def health():
     for name, feed in FEEDS.feeds.items():
         age = FEEDS.age(name, now)
         feeds[name] = {"ageSec": None if age is None else round(age), "ok": feed.ok}
+    switch = extreme.state(EXTREME.get(), now)
+    problem = EXTREME.problem
     body = {
-        "ok": poller and not stale and not SITE_PROBLEMS,
+        "ok": poller and not stale and not SITE_PROBLEMS and not problem,
         "stale": stale,
         "poller": poller,
         "feeds": feeds,
         "sites": len(SITES),
         "siteProblems": SITE_PROBLEMS,
+        "extreme": switch,
+        "extremeProblem": problem,
     }
     return JSONResponse(body, status_code=200 if body["ok"] else 503)
 
@@ -208,9 +222,70 @@ def snapshot(
         stale=stale,
         position=parse_position(lat, lon, acc),
         wind=FEEDS.value("wind"),
+        extreme=EXTREME.get(),
     )
     snap["source"] = "live"
     return snap
+
+
+def require_admin(request: Request, authorization: Optional[str] = Header(default=None)):
+    """The admin key as `Authorization: Bearer <key>`, over https only. Checked before anything is read."""
+    if not ADMIN_KEY:
+        raise HTTPException(status_code=403, detail="admin-disabled: ADMIN_KEY is not set on the server")
+    # Caddy sets X-Forwarded-Proto from the real connection. A request sent over plain http has already shown the
+    # key to the network, so refuse it, to make the mistake visible (docs/site-setup.md: replace the key).
+    proto = request.headers.get("x-forwarded-proto")
+    if proto is not None and proto.split(",")[0].strip().lower() != "https":
+        raise HTTPException(status_code=403, detail="https-required: use https://, then replace the key")
+    if not extreme.key_ok(extreme.bearer(authorization), ADMIN_KEY):
+        log.warning("「極端情況」 switch: request refused (missing or wrong admin key)")
+        raise HTTPException(
+            status_code=401, detail="admin-key-required", headers={"WWW-Authenticate": 'Bearer realm="admin"'}
+        )
+
+
+@app.get("/api/v1/admin/extreme", dependencies=[Depends(require_admin)])
+def extreme_status():
+    """The switch as recorded. Also the way to check the admin key works, without changing anything."""
+    return extreme.state(EXTREME.get(), datetime.now(HKT))
+
+
+@app.put("/api/v1/admin/extreme", dependencies=[Depends(require_admin)])
+async def extreme_on(request: Request):
+    """Switch 「極端情況」 on, or change its times: {"startsAt": optional, "endsAt": required}, Hong Kong time.
+
+    Without startsAt, one in force or still to come keeps its start (an extension); otherwise it starts now."""
+    try:
+        body = await request.json()
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"send JSON, for example {extreme.EXAMPLE}") from None
+    now = datetime.now(HKT)
+    try:
+        ann = extreme.announcement(body, now, EXTREME.get())
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err)) from None
+    try:
+        EXTREME.set(ann)
+    except OSError as err:
+        log.error("「極端情況」 switch: could not save %s: %s", EXTREME.path, err)
+        raise HTTPException(status_code=503, detail=f"not saved, nothing changed: {err}") from None
+    log.warning("「極端情況」 set: %s to %s", ann["startsAt"], ann["endsAt"])
+    return extreme.state(ann, now)
+
+
+@app.delete("/api/v1/admin/extreme", dependencies=[Depends(require_admin)])
+def extreme_off():
+    """Switch 「極端情況」 off now: one in force ends now, one that has not started is withdrawn."""
+    now = datetime.now(HKT)
+    before = extreme.status(EXTREME.get(), now)
+    try:
+        ann = EXTREME.end(now)
+    except OSError as err:
+        log.error("「極端情況」 switch: could not save %s: %s", EXTREME.path, err)
+        raise HTTPException(status_code=503, detail=f"not saved, nothing changed: {err}") from None
+    if before in ("active", "scheduled"):
+        log.warning("「極端情況」 switched off at %s (it was %s)", extreme.iso(now), before)
+    return extreme.state(ann, now)
 
 
 @app.get("/api/v1/sim/cases")
