@@ -8,16 +8,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import {
-  formatUv,
-  isStale,
-  railSignals,
-  windNameZh,
-  type Extreme,
-  type RestTile,
-  type Snapshot,
-  type Wind,
-} from "./present";
+import { formatUv, isStale, railSignals, windNameZh, type RestTile, type Snapshot, type Wind } from "./present";
 
 const STALE_TEXT = "資料過期 — 請以我的天文台為準";
 
@@ -58,7 +49,7 @@ function En({ text, className }: { text?: string | null; className?: string }) {
   );
 }
 
-// The official English lines under an instruction (a weather warning or 「極端情況」).
+// The official English lines under an instruction (a weather warning, or the normal-day rest lines).
 function EnLines({ lines }: { lines: string[] }) {
   if (!lines.length) return null;
   return (
@@ -134,24 +125,6 @@ function Tile({ tile }: { tile: RestTile }) {
       </div>
       <div className="small">{tile.kind === "baseline" ? `每 ${tile.perHours} 小時` : `工作 ${tile.work} 分鐘`}</div>
       <TileEn lines={tile.en?.lines} />
-    </div>
-  );
-}
-
-// 「極端情況」 has no official icon, and AGENTS.md forbids drawing one. Its name and the announced period, set large
-// on a plate, take the icon's place: text only, readable from across the gate.
-function Notice({ extreme }: { extreme: Extreme }) {
-  return (
-    <div className="notice">
-      <div className="notice-name">{extreme.nameZh}</div>
-      <div className="notice-time">
-        <span className="when">
-          <b>{extreme.startZh}</b> 生效
-        </span>
-        <span className="when">
-          <b>{extreme.endZh}</b> 結束
-        </span>
-      </div>
     </div>
   );
 }
@@ -336,20 +309,7 @@ export function Screen({ snap, clock, date, layout, simbar, stale: staleProp }: 
           style={scale < 1 ? { transform: `scale(${scale})` } : undefined}
         >
           {display.heroRel && <Plate rel={display.heroRel} className="hero" />}
-          {mode === "extreme" && snap.extreme ? (
-            <>
-              <Notice extreme={snap.extreme} />
-              <div className="action" style={{ "--chars": [...main].length } as CSSProperties}>
-                {main}
-              </div>
-              {(display.sub || []).map((line) => (
-                <div key={line} className="sub">
-                  {line}
-                </div>
-              ))}
-              <EnLines lines={enLines} />
-            </>
-          ) : mode === "heat" ? (
+          {mode === "heat" ? (
             <>
               <div className="tiles">
                 {(snap.restTiles || []).map((tile) => (

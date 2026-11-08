@@ -336,34 +336,5 @@
         ]
       }
     }
-  },
-  "extreme": {
-    "display": {
-      "where": "附錄二（在戶外及空曠地方的工作安排參考指引），「一般人員」(b) 在工作時間內發出或生效，「極端情況」欄，第一點",
-      "main": "留在原來的地點或安全的地點",
-      "sub": ["而非立即啟程往工作地點上班"],
-      "quotes": [
-        {"source": "ld-cop-weather", "text": "在公布的指定期間留在原來的地點或安全的地點，而非立即啟程往工作地點上班。"}
-      ],
-      "en": {
-        "lines": ["To stay where they are or in a safe place", "instead of heading for work at workplaces immediately"],
-        "quotes": [
-          {"source": "ld-cop-weather-en", "text": "To stay where they are or in a safe place during the specified period of announcement, instead of heading for work at workplaces immediately."}
-        ]
-      }
-    },
-    "supervisor": {
-      "where": "附錄二，「一般人員」(b) 在工作時間內發出或生效，「極端情況」欄，第二點",
-      "fragments": ["立即暫停僱員在戶外及空曠地方的工作，並安排僱員到安全地方暫避"],
-      "quotes": [
-        {"source": "ld-cop-weather", "text": "主管應立即暫停僱員在戶外及空曠地方的工作，並安排僱員到安全地方暫避。"}
-      ],
-      "en": {
-        "fragments": ["immediately suspend the work of employees working outdoors and in exposed areas and arrange temporary shelter in a safe place for them"],
-        "quotes": [
-          {"source": "ld-cop-weather-en", "text": "Supervisors should immediately suspend the work of employees working outdoors and in exposed areas and arrange temporary shelter in a safe place for them."}
-        ]
-      }
-    }
   }
 }

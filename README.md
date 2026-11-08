@@ -2,7 +2,7 @@
 
 Hong Kong construction **site notice**: live Labour Department Heat Stress at Work Warning (HSWW) and HKO weather warnings on one screen at the gate.
 
-Official HKO / Labour Department icons and wording only. Every state uses one centred layout, in landscape or portrait: a large official icon, the instruction, and a bottom bar with every warning in force, the temperature and the wind at the nearest HKO stations, tomorrow's forecast with its chance of significant rain, and the clock. On heat-stress days the instruction becomes one tile per rest time, labelled with the site's trades. A site can add an English line under the Chinese, made only of the official English versions of the same sentences. One server runs many sites, and each screen runs unattended. When a site's screen changes, its supervisors can get a short email. When the Government announces 「極端情況」, the operator switches every screen to it. Not a 4S system. Not a sensor product.
+Official HKO / Labour Department icons and wording only. Every state uses one centred layout, in landscape or portrait: a large official icon, the instruction, and a bottom bar with every warning in force, the temperature and the wind at the nearest HKO stations, tomorrow's forecast with its chance of significant rain, and the clock. On heat-stress days the instruction becomes one tile per rest time, labelled with the site's trades. A site can add an English line under the Chinese, made only of the official English versions of the same sentences. One server runs many sites, and each screen runs unattended. Not a 4S system. Not a sensor product.
 
 ## Live demo
 
@@ -30,7 +30,7 @@ A site without `languages` shows Chinese only, exactly as before:
 
 ![Amber heat stress, Chinese only](docs/demo/amber-zh.png)
 
-Design and decisions: `docs/superpowers/specs/` ([gate screen](docs/superpowers/specs/2026-10-06-gate-screen-upgrade-design.md), [weather station by location](docs/superpowers/specs/2026-10-06-weather-station-by-location-design.md), [site-ready upgrade](docs/superpowers/specs/2026-11-07-site-ready-upgrade-design.md), [supervisor alerts](docs/superpowers/specs/2026-11-07-supervisor-alerts-design.md), [「極端情況」](docs/superpowers/specs/2026-11-07-extreme-conditions-design.md), [official English line](docs/superpowers/specs/2026-11-07-english-line-design.md)). Installing a screen, supervisor alerts and the 「極端情況」 switch: [docs/site-setup.md](docs/site-setup.md).
+Design and decisions: `docs/superpowers/specs/` ([gate screen](docs/superpowers/specs/2026-10-06-gate-screen-upgrade-design.md), [weather station by location](docs/superpowers/specs/2026-10-06-weather-station-by-location-design.md), [site-ready upgrade](docs/superpowers/specs/2026-11-07-site-ready-upgrade-design.md), [official English line](docs/superpowers/specs/2026-11-07-english-line-design.md), [no operator switch](docs/superpowers/specs/2026-11-08-no-operator-switch-design.md)). Installing a screen: [docs/site-setup.md](docs/site-setup.md).
 
 ## Rules the notice will not break
 
@@ -39,14 +39,13 @@ Design and decisions: `docs/superpowers/specs/` ([gate screen](docs/superpowers/
 - Instruction text lives in `config/display_actions.json`, stored with the official sentence it comes from. `tests/test_display_actions.py` fails if a displayed fragment is not a verbatim part of its quote.
 - English follows the same rule: each English line is a verbatim part of the official English version of the sentence, quoted from LD's or HKO's English document next to the Chinese, under the same test. Where no official English sentence exists, the screen shows no English. Nothing is translated, and Chinese stays the main text.
 - Warning marks are official HKO/LD files. We do not draw substitute typhoon / rain / heat symbols.
-- 「極端情況」 appears only when the operator switches it on to mirror a Government announcement, with the announced times. It is never inferred from HKO data. It has no official icon, so the screen shows its name in text and draws no symbol.
 - Wind is HKO's reading at a named station, nothing more. The screen never turns it into a limit or an instruction: lifting limits are the crane's or gondola's own.
 - `GET /api/v1/snapshot` is always live. `POST /sim` is preview-only.
 
 ## Official sources (checked 2026-10-06; English 2026-11-07)
 
 - Labour Department 《預防工作時中暑指引》, 3rd edition (revised) Aug 2026: https://www.labour.gov.hk/common/public/oh/Heat_Stress_GN_tc.pdf
-- Labour Department 《惡劣天氣及「極端情況」下工作守則》, May 2026 (re-checked 2026-11-07 for 「極端情況」): https://www.labour.gov.hk/tc/public/pdf/wcp/Rainstorm.pdf
+- Labour Department 《惡劣天氣及「極端情況」下工作守則》, May 2026: https://www.labour.gov.hk/tc/public/pdf/wcp/Rainstorm.pdf
 - HKO advice pages for tropical cyclone signals, rainstorms, landslips and tsunamis (URLs in `config/display_actions.json`)
 - The English versions, for the English line: LD *Guidance Notes on Prevention of Heat Stroke at Work*, Third edition (Revised) August 2026 (https://www.labour.gov.hk/common/public/oh/Heat_Stress_GN_en.pdf), LD *Code of Practice in Times of Adverse Weather and "Extreme Conditions"*, May 2026 (https://www.labour.gov.hk/eng/public/wcp/Rainstorm.pdf), and HKO's English advice pages
 - HKO Open Data API documentation: https://data.weather.gov.hk/weatherAPI/doc/HKO_Open_Data_API_Documentation.pdf
@@ -113,7 +112,6 @@ Stations and coordinates are HKO's own (https://www.hko.gov.hk/en/cis/stn.htm). 
 | `restAdjustMinutes` | Employer's adjustment under LD guidance §5.3–5.5: a multiple of 15, from −30 to +60 |
 | `defaultWorkload` | `light`, `moderate`, `heavy` or `very_heavy` |
 | `primaryTrades[]` | `labelZh`, `workload`, and optional per-trade `labelEn` (the trade's English name, shown on the tiles of a site with English), `environment` and `adjustMinutes` |
-| `alerts.email` | Supervisors who get an email when the screen changes (*Supervisor alerts* below). A mistake here is reported in `siteProblems` and never changes the screen |
 
 **Several sites.**
 
@@ -122,27 +120,9 @@ Stations and coordinates are HKO's own (https://www.hko.gov.hk/en/cis/stn.htm). 
 - docker-compose mounts the folder, so after editing a file run `docker compose restart ingest`; no rebuild is needed.
 - A file with a mistake is left out, logged, and listed in `siteProblems` of `/api/v1/health`. Its screens, and any unknown `?site=`, show every workload level without trade names until it is fixed. A mistake in one site's file never stops the other sites' screens.
 
-## 「極端情況」 (extreme conditions)
+## What the screen does not show
 
-![「極端情況」 with Signal 3 still in force](docs/demo/extreme.png)
-
-After a super typhoon or another large-scale disaster, the Government may announce 「極端情況」 for the whole territory, for a stated period. It is not an HKO warning and no data feed carries it, so the operator switches it on with the announced times. Every screen on the server then shows:
-
-- a plate with 「極端情況」 and the announced period, in place of an icon (there is no official one);
-- the Labour Department's instruction for it, 留在原來的地點或安全的地點 / 而非立即啟程往工作地點上班, and the 主管注意 line 立即暫停僱員在戶外及空曠地方的工作，並安排僱員到安全地方暫避 (Code of Practice, Appendix 2);
-- on a site that shows English, the English Code of Practice's wording for the same two bullets under the Chinese, "To stay where they are or in a safe place" / "instead of heading for work at workplaces immediately", and its English supervisor line;
-- every HKO and heat-stress warning in force, on the bar as usual. 「極端情況」 takes the centre over all of them, because it is the only one without an icon;
-- 「極端情況」 生效 on the banner for 10 minutes after the start, and 「極端情況」 結束 for 10 minutes after the end.
-
-The switch is `/api/v1/admin/extreme`, with `Authorization: Bearer <ADMIN_KEY>`, over `https://` only:
-
-| Call | Does |
-|---|---|
-| `PUT {"endsAt": "2026-11-07T19:00"}` | Switches on now, or extends it, keeping its start. Hong Kong time; `startsAt` is optional |
-| `DELETE` | Switches off now |
-| `GET` | Shows the state, and tests the key |
-
-It ends by itself at the announced end, survives restarts (its own `extreme-state` volume) and applies to every site. Without `ADMIN_KEY` it is off. Supervisor alerts sent while it is in force repeat its lines as the screen shows them; switching it on or off sends none. Who may switch it, and the commands: [docs/site-setup.md](docs/site-setup.md) §9. Design and ranking: [spec](docs/superpowers/specs/2026-11-07-extreme-conditions-design.md).
+**「極端情況」 (extreme conditions).** After a super typhoon or another large-scale disaster, the Government may announce 「極端情況」 for the whole territory. No official data feed carries it. It is not an HKO warning, HKO's open data has no item for it, and the Government announces it through press releases, the media and social media. So the screen cannot know when it is in force, and keeps showing what HKO's feeds say. During 「極端情況」, follow the Government's announcement and the Labour Department's Code of Practice. The screen has no manual switch for it, because this is a public service with no operator on call: [why](docs/superpowers/specs/2026-11-08-no-operator-switch-design.md).
 
 ## Running unattended
 
@@ -155,35 +135,9 @@ Each screen looks after itself:
 - It reloads itself within 5 minutes of a new deploy, but never while offline.
 - A service worker keeps a copy of the page, never the data, so a screen that powers on while the internet is down still opens. It then picks up the data by itself once the network is back.
 
-Monitoring: `GET /api/v1/health` returns 503 in these cases:
-- the warning feeds are stale;
-- the feed poller has stopped;
-- a site file has a mistake;
-- supervisor alerts are misconfigured, or have not been going out for 15 minutes;
-- the 「極端情況」 switch's state cannot be read or saved.
-
-Point an uptime monitor at it. `GET /healthz` is the container health check, and docker-compose uses it.
+Monitoring: `GET /api/v1/health` returns 503 when the warning feeds are stale, the feed poller has stopped, or a site file has a mistake. Point an uptime monitor at it. `GET /healthz` is the container health check, and docker-compose uses it.
 
 Hardware, kiosk browser settings, TV power settings, placement and the on-site checks: [docs/site-setup.md](docs/site-setup.md).
-
-## Supervisor alerts
-
-When a site's screen changes state, each supervisor in its `alerts.email` gets one short email. It says what changed, what the screen now shows, which warnings are in force, and the screen's link. Changes are:
-- the Heat Stress at Work Warning level (`iconIndex` only);
-- any HKO warning issued, changed or cancelled, in `warnsum`, plus the Pre-8 announcement.
-
-Whoever runs the server (`ALERT_OPERATOR`) gets one email when the warning data goes stale, and one when it comes back.
-
-- A message repeats only what the screen shows: official warning names and the screen's own lines, from `config/display_actions.json` and `config/rest_schedule.json`. It adds no wording, and a test checks every word.
-- One message per real change:
-  - a new state counts once two fetches of its feed in a row agree, because HKO feeds glitch;
-  - what each site was last told is kept on the `alert-state` volume, so a restart never sends again, and a change made while the service was down is still sent;
-  - a rate limit holds back cancellations after 6 quick messages, and merges them into the next message. It never holds back a new warning.
-- Messages arrive 1–2 minutes after the official change. The screen stays the authority.
-- Without `SMTP_HOST`, the service runs in dry run: it writes each message to its log instead of sending it.
-- `docker compose exec ingest python -m app.alerts --test <siteId>` sends a test message showing the screen as it is now (`--test operator` for the operator).
-
-Settings, all in the server's `.env`: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_USER`, `SMTP_PASSWORD`, `ALERT_FROM`, `ALERT_OPERATOR`, `ALERT_DRY_RUN`, `PUBLIC_URL`. Set-up: [docs/site-setup.md](docs/site-setup.md) §8. Design: [supervisor alerts spec](docs/superpowers/specs/2026-11-07-supervisor-alerts-design.md).
 
 ## Local run
 
@@ -201,8 +155,6 @@ On Windows, use `.venv/Scripts/python.exe` in place of `.venv/bin/python`.
 - http://localhost:5173/?preview=1 — fixture preview (add `&bar=0` to hide the buttons)
 - http://localhost:5173/?gallery=1 — every official icon and signal case
 
-To try the 「極端情況」 switch, set `ADMIN_KEY` to a random string of at least 32 characters when starting uvicorn. Its state goes to `state/` (ignored by git), or to `STATE_DIR`.
-
 Tests: `.venv/bin/python -m pytest tests -q`. Kiosk type-check and build: `cd apps/kiosk && npm run build`.
 
 ## Deploy
@@ -212,7 +164,3 @@ docker compose up --build -d
 ```
 
 Open http://SERVER_IP/ (live). Do not commit `.env`, origin certificates, or real site names. Site files live in `config/sites/` on the server: copy `config/sites/demo-site.json`. Both containers have health checks (`docker compose ps`). Location, the offline copy and wake lock need `https://`.
-
-SMTP credentials go only in the server's `.env`, written from Bitwarden (docs/site-setup.md §8). After changing `.env`, run `docker compose up -d ingest`; `restart` does not read it again. The `alert-state` volume keeps what each site's supervisors were last told. `docker compose down -v` deletes it, and the next start then remembers the current state quietly.
-
-The 「極端情況」 switch stays off until `ADMIN_KEY` is in `.env` ([docs/site-setup.md](docs/site-setup.md) §9). It is kept on a volume of its own, `extreme-state`. `docker compose down -v` deletes that too, which switches 「極端情況」 off.

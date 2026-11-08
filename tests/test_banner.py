@@ -77,20 +77,3 @@ def test_most_severe_wins():
 
 def test_hidden_when_stale():
     assert banner(AMBER_ISSUE, stale=True) is None
-
-
-EXTREME_STARTED = {"startsAt": iso(2), "endsAt": (NOW + timedelta(minutes=118)).isoformat(), "setAt": iso(2)}
-
-
-def test_extreme_conditions_outrank_any_hko_event_in_the_banner():
-    events = [event("TC10", "ISSUE", 1, type_="十號颶風信號"), event("WRAINB", "ISSUE", 1, type_="黑色暴雨警告信號")]
-    shown = build_banner(AMBER_ISSUE, events, [], NOW, code_rank, False, EXTREME_STARTED)
-    assert shown == {"time": "14:43", "textZh": "「極端情況」 生效", "kind": "issue", "code": "EXTREME"}
-
-
-def test_extreme_conditions_end_banner_and_edges():
-    ended = {"startsAt": iso(130), "endsAt": iso(10), "setAt": iso(130)}
-    assert build_banner({}, [], [], NOW, code_rank, False, ended)["textZh"] == "「極端情況」 結束"
-    gone = {"startsAt": iso(130), "endsAt": (NOW - timedelta(minutes=10, seconds=1)).isoformat()}
-    assert build_banner({}, [], [], NOW, code_rank, False, gone) is None
-    assert build_banner({}, [], [], NOW, code_rank, True, ended) is None

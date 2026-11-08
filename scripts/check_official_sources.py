@@ -5,7 +5,7 @@ Run from the repo root. The PDFs need pypdf with AES support: pip install "pypdf
     python3 scripts/check_official_sources.py --update-lock   record the Labour Department PDFs as verified
 
 Every source in config/display_actions.json is downloaded again, and every quote that cites it (weather,
-supervisor, notes and extreme, their English, and the English rest wording) must still be in it word for word.
+supervisor and notes, their English, and the English rest wording) must still be in it word for word.
 Only whitespace, list bullets at the start of a line, the punctuation variants ︰ : , ; ( ) against their
 full-width forms, and PDF glyph artifacts (⾏ for 行, full-width digits) are ignored.
 
@@ -41,7 +41,7 @@ TIMEOUT_SEC = 60
 RETRY_WAIT_SEC = (5, 15)  # two retries
 HKT = timezone(timedelta(hours=8))
 # Every section of config/display_actions.json that holds wording shown on screen (as in services/ingest/app/actions.py).
-SECTIONS = ("weather", "supervisor", "notes", "extreme", "rest")
+SECTIONS = ("weather", "supervisor", "notes", "rest")
 UPDATE_LOCK = "python3 scripts/check_official_sources.py --update-lock"
 LOCK_NOTE = (
     "Labour Department PDFs as last verified by a person (spec §9). "
