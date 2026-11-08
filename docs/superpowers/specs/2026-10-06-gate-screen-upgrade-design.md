@@ -456,6 +456,7 @@ Run this each April, before the hot season, and whenever LD or HKO announce revi
 3. Update `sources[*].checked` dates.
 4. Run `python3 scripts/fetch_hko_stations.py --check`. It compares `config/hko_stations.json` with HKO's station page and reports any station in the live weather report that has no coordinates yet.
 5. Do steps 1–3 for the English versions too (English line spec, `2026-11-07-english-line-design.md` §3): the two English LD PDFs, including their Appendix 4 and 4(a) against `rest_schedule.json`, and HKO's English advice pages. When Appendix 1 changes, check the English trade names (`labelEn`) in the site files.
+6. In the Code of Practice (Chinese and English), re-read Chapter 3, 復工安排的安全要點 (c) 保持警覺 / "Remain vigilant", behind the reminder after Signal 8 or Black rain (`2026-11-08-after-signal-reminder-design.md`). If the Code ever names how long to stay alert, compare it with `hours` in that `supervisor` entry.
 
 ## 10. Known gaps (later sub-projects)
 
