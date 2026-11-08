@@ -1,4 +1,4 @@
-FROM node:20-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /web
 COPY apps/kiosk/package.json apps/kiosk/package-lock.json* ./
 RUN npm install
