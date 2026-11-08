@@ -28,8 +28,9 @@ def state_tone(mode, code, level):
     return "idle"
 
 
-def supervisor_lines(actions, codes, labels, labels_en=None):
-    """Official supervisor instructions for warnings in force, most severe first, at most two.
+def supervisor_lines(actions, codes, labels, labels_en=None, after=None):
+    """Official supervisor instructions, by rank, at most two: for warnings in force, and the line shown for a
+    while after a signal ended (`after`: {code, fromZh, whenZh, fromEn}, from app.after, or None).
 
     With `labels_en` (HKO's English names by code, for a site that shows English) each line also gets its
     official English (`textEn`) and the warning's English name (`fromEn`); either is None when there is none.
@@ -37,13 +38,21 @@ def supervisor_lines(actions, codes, labels, labels_en=None):
     present = set(codes or [])
     hits = []
     for spec in (actions.get("supervisor") or {}).values():
-        code = next((c for c in spec["codes"] if c in present), None)
-        if code:
+        if "after" in spec:
+            if not after or after["code"] not in spec["after"]:
+                continue
+            line = {"text": ZH_JOIN.join(spec["fragments"]), "fromZh": after["fromZh"], "whenZh": after["whenZh"]}
+            name_en = after.get("fromEn")
+        else:
+            code = next((c for c in spec["codes"] if c in present), None)
+            if not code:
+                continue
             line = {"text": ZH_JOIN.join(spec["fragments"]), "fromZh": labels.get(code) or code}
-            if labels_en is not None:
-                line["textEn"] = english_text(spec)
-                line["fromEn"] = labels_en.get(code)
-            hits.append((spec["rank"], line))
+            name_en = labels_en.get(code) if labels_en is not None else None
+        if labels_en is not None:
+            line["textEn"] = english_text(spec)
+            line["fromEn"] = name_en
+        hits.append((spec["rank"], line))
     hits.sort(key=lambda hit: hit[0])
     return [line for _, line in hits[:MAX_SUPERVISOR]]
 

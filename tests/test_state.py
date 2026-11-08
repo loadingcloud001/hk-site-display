@@ -46,3 +46,43 @@ def test_supervisor_line_for_signal_3():
 def test_tc_signal_code():
     assert tc_signal_code(["WTCPRE8", "TC3"]) == "TC3"
     assert tc_signal_code(["WRAINR"]) is None
+
+
+AFTER_TC8 = {"code": "TC8NE", "fromZh": "八號東北烈風或暴風信號", "whenZh": "16:20 改發較低警告信號",
+             "fromEn": "No. 8 Northeast Gale or Storm Signal"}
+REMAIN_VIGILANT = "留意天氣信息，保持高度警覺：可能仍持續影響工作安全"
+
+
+def test_after_signal_8_the_reminder_follows_the_warnings_in_force():
+    lines = supervisor_lines(ACTIONS, ["TC3"], {"TC3": "三號強風信號"}, None, AFTER_TC8)
+    assert lines == [
+        {"text": "停止操作起重機、吊船", "fromZh": "三號強風信號"},
+        {"text": REMAIN_VIGILANT, "fromZh": "八號東北烈風或暴風信號", "whenZh": "16:20 改發較低警告信號"},
+    ]
+
+
+def test_the_reminder_is_never_more_than_the_second_line():
+    labels = {"TC3": "三號強風信號", "WTS": "雷暴警告"}
+    lines = supervisor_lines(ACTIONS, ["TC3", "WTS"], labels, None, AFTER_TC8)
+    assert [line["text"] for line in lines] == [
+        "有僱員可能遭受雷電擊中時：立即停止工作，並到安全地方暫避",
+        "停止操作起重機、吊船",
+    ]
+    assert supervisor_lines(ACTIONS, [], {}, None, AFTER_TC8)[0]["text"] == REMAIN_VIGILANT
+
+
+def test_the_reminder_only_for_its_own_signals():
+    tc3 = {**AFTER_TC8, "code": "TC3"}
+    assert supervisor_lines(ACTIONS, [], {}, None, tc3) == []
+    assert supervisor_lines(ACTIONS, [], {}, None, None) == []
+
+
+def test_the_reminder_in_english_is_the_official_sentence_and_hkos_name():
+    [line] = supervisor_lines(ACTIONS, [], {}, {}, AFTER_TC8)
+    assert line["textEn"] == (
+        "Pay attention to weather information and remain highly vigilant; be aware that work safety may still be "
+        "affected even after the cancellation or lowering of warning signals"
+    )
+    assert line["fromEn"] == "No. 8 Northeast Gale or Storm Signal"
+    [line] = supervisor_lines(ACTIONS, [], {}, {}, {**AFTER_TC8, "fromEn": None})
+    assert line["fromEn"] is None

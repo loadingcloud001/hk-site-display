@@ -12,7 +12,7 @@
       "titleZh": "勞工處《惡劣天氣及「極端情況」下工作守則》",
       "edition": "2026年5月（中文版2026年6月）",
       "url": "https://www.labour.gov.hk/tc/public/pdf/wcp/Rainstorm.pdf",
-      "checked": "2026-11-07"
+      "checked": "2026-11-08"
     },
     "hko-tc": {
       "lang": "zh",
@@ -54,7 +54,7 @@
       "titleEn": "Labour Department, Code of Practice in Times of Adverse Weather and “Extreme Conditions”",
       "edition": "May 2026",
       "url": "https://www.labour.gov.hk/eng/public/wcp/Rainstorm.pdf",
-      "checked": "2026-11-07"
+      "checked": "2026-11-08"
     },
     "hko-tc-en": {
       "lang": "en",
@@ -266,6 +266,25 @@
         "fragments": ["Suspend the operation of suspended working platforms, slope works, etc."],
         "quotes": [
           {"source": "ld-cop-weather-en", "text": "When Amber or Red Rainstorm Warning Signal is in force: Suspend the operation of suspended working platforms, slope works, etc."}
+        ]
+      }
+    },
+    "after-tc8-black-rain": {
+      "_note": "Not a warning in force: shown for `hours` after HKO cancels one of the `after` signals or replaces it with a lower one (services/ingest/app/after.py). `when` labels how it ended, after the signal's HKO name and time.",
+      "rank": 5,
+      "after": ["TC8NE", "TC8SE", "TC8NW", "TC8SW", "TC9", "TC10", "WRAINB"],
+      "hours": 24,
+      "fragments": ["留意天氣信息，保持高度警覺", "可能仍持續影響工作安全"],
+      "when": {"cancel": "取消", "lower": "改發較低警告信號"},
+      "quotes": [
+        {"source": "ld-cop-weather", "text": "留意天氣信息，保持高度警覺，防範雷暴、暴雨和熱帶氣旋警告取消或改發較低警告信號後，或「極端情況」結束後，可能仍持續影響工作安全；定期檢討惡劣天氣及「極端情況」下工作安全指引。"}
+      ],
+      "en": {
+        "fragments": [
+          "Pay attention to weather information and remain highly vigilant; be aware that work safety may still be affected even after the cancellation or lowering of warning signals"
+        ],
+        "quotes": [
+          {"source": "ld-cop-weather-en", "text": "Pay attention to weather information and remain highly vigilant; be aware that work safety may still be affected even after the cancellation or lowering of warning signals of thunderstorms, rainstorms and tropical cyclones or ending of “extreme conditions”, regularly review work safety guidelines for adverse weather and “extreme conditions”."}
         ]
       }
     }

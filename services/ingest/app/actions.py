@@ -42,9 +42,37 @@ def _norm_en(text):
 
 
 def displayed(spec):
-    """Everything an entry puts on screen: its main line, its sub lines and its fragments."""
+    """Everything an entry puts on screen: its main line, its sub lines, its fragments and its `when` labels."""
     main = [spec["main"]] if "main" in spec else []
-    return [*main, *(spec.get("sub") or []), *(spec.get("fragments") or [])]
+    when = list((spec.get("when") or {}).values())
+    return [*main, *(spec.get("sub") or []), *(spec.get("fragments") or []), *when]
+
+
+def after_spec(actions):
+    """The supervisor entry shown after a signal ends (its `after` codes, `hours` and `when`), or None."""
+    return next((spec for spec in (actions.get("supervisor") or {}).values() if "after" in spec), None)
+
+
+def _supervisor_errors(section):
+    """A supervisor line is shown either while one of its `codes` is in force, or for `hours` after one of its
+    `after` signals ends (labelled by `when`), never both; and only one entry can be the after-signal line."""
+    errors = []
+    after = [key for key, spec in section.items() if "after" in spec]
+    if len(after) > 1:
+        errors.append(f"supervisor: only one entry can have \"after\", found {after}")
+    for key, spec in section.items():
+        where = f"supervisor.{key}"
+        if ("codes" in spec) == ("after" in spec):
+            errors.append(f"{where}: give either \"codes\" (shown while in force) or \"after\" (shown after it ends)")
+        if "after" not in spec:
+            continue
+        hours = spec.get("hours")
+        if isinstance(hours, bool) or not isinstance(hours, (int, float)) or hours <= 0:
+            errors.append(f"{where}: \"hours\" must be a positive number")
+        when = spec.get("when") or {}
+        if set(when) != {"cancel", "lower"}:
+            errors.append(f"{where}: \"when\" needs exactly \"cancel\" and \"lower\"")
+    return errors
 
 
 def english_key(spec):
@@ -163,6 +191,7 @@ def fragment_errors(actions, schedule=None):
                 errors.append(f"{section}.{key}: no main instruction")
             check(f"{section}.{key}", displayed(spec), spec.get("quotes"), "zh")
             check_en(f"{section}.{key}", spec)
+    errors += _supervisor_errors(actions.get("supervisor") or {})
 
     rest = actions.get("rest")
     if rest is not None:

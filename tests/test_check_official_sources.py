@@ -104,6 +104,8 @@ def test_changed_pdf_fails_with_what_to_recheck():
 def test_changed_code_of_practice_names_its_appendix():
     ok, message = cos.compare_lock("ld-cop-weather", _current(sha256="b" * 64), _entry())
     assert not ok and "App. 2" in message
+    # The reminder after Signal 8 or Black rain quotes Chapter 3 (c), outside the appendix.
+    assert "Ch. 3" in message and "保持警覺" in message
 
 
 def test_pdf_missing_from_the_lock_fails():

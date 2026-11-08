@@ -193,3 +193,33 @@ def test_english_must_be_kept_where_the_screen_reads_it():
     en = bad["supervisor"]["monsoon"]["en"]
     en["lines"] = en.pop("fragments")
     assert any("supervisor.monsoon.en: nothing to show" in e for e in fragment_errors(bad))
+
+
+# The supervisor line shown after Signal 8 or above, or Black rain, ends.
+
+
+def test_the_after_signal_line_and_its_labels_are_official_wording():
+    from app.actions import after_spec, displayed
+
+    spec = after_spec(ACTIONS)
+    assert spec["fragments"] == ["留意天氣信息，保持高度警覺", "可能仍持續影響工作安全"]
+    assert spec["when"] == {"cancel": "取消", "lower": "改發較低警告信號"}
+    assert set(spec["when"].values()) <= set(displayed(spec))
+    bad = copy.deepcopy(ACTIONS)
+    bad["supervisor"]["after-tc8-black-rain"]["when"]["lower"] = "改發低一級信號"
+    assert any("改發低一級信號" in e for e in fragment_errors(bad))
+
+
+def test_the_after_signal_line_needs_its_signals_hours_and_labels():
+    def errors(change):
+        bad = copy.deepcopy(ACTIONS)
+        change(bad["supervisor"])
+        return fragment_errors(bad)
+
+    assert any("either \"codes\"" in e for e in errors(lambda s: s["after-tc8-black-rain"].update(codes=["TC3"])))
+    assert any("either \"codes\"" in e for e in errors(lambda s: s["monsoon"].pop("codes")))
+    assert any("\"hours\"" in e for e in errors(lambda s: s["after-tc8-black-rain"].update(hours=0)))
+    assert any("\"hours\"" in e for e in errors(lambda s: s["after-tc8-black-rain"].update(hours="24")))
+    assert any("\"when\"" in e for e in errors(lambda s: s["after-tc8-black-rain"]["when"].pop("cancel")))
+    two = errors(lambda s: s.update({"copy": copy.deepcopy(s["after-tc8-black-rain"])}))
+    assert any("only one entry" in e for e in two)
