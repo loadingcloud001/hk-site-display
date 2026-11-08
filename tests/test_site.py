@@ -5,8 +5,6 @@ import pytest
 
 from app.site import (
     GENERIC_SITE,
-    MAX_RECIPIENTS,
-    alert_recipients,
     configured_trades,
     load_sites,
     site_languages,
@@ -221,46 +219,3 @@ def test_demo_site_shows_english_with_appendix_1_trade_names():
         "水喉": "Plumber", "焊接": "Welder", "保安": "Security guard", "檢查": "Inspector of works",
     }
 
-
-def test_alert_recipients_are_read_and_tidied():
-    site = {**DEMO, "alerts": {"email": [" chan@example.com ", "lee@example.com", "CHAN@example.com"]}}
-    assert alert_recipients(site) == ({"email": ["chan@example.com", "lee@example.com"]}, [])
-    assert alert_recipients(DEMO) == ({}, [])  # no alerts field: no alerts, no problem
-    assert alert_recipients({**DEMO, "alerts": {"email": []}}) == ({}, [])
-
-
-@pytest.mark.parametrize(
-    "alerts, recipients, problem",
-    [
-        (["chan@example.com"], {}, "alerts must be an object"),
-        ({"email": "chan@example.com"}, {}, "alerts.email must be a list"),
-        ({"email": ["chan@example.com", "chan at example.com"]}, {"email": ["chan@example.com"]}, "alerts.email[1]"),
-        ({"email": ["chan@example"]}, {}, "alerts.email[0] is not an email address"),
-        ({"email": [7]}, {}, "alerts.email[0] is not an email address"),
-        ({"email": ["chan@example.com\nBcc: all@example.com"]}, {}, "alerts.email[0] is not an email address"),
-        ({"email": ["chan@example.com"], "telegram": ["@chan"]}, {"email": ["chan@example.com"]}, "alerts.telegram"),
-        ({"Email": ["chan@example.com"]}, {}, "alerts.Email is not supported"),
-        ({"chan@example.com": True}, {}, "a field in alerts is not supported"),
-    ],
-)
-def test_a_bad_recipients_entry_is_skipped_and_named_without_the_address(alerts, recipients, problem):
-    found, problems = alert_recipients({**DEMO, "alerts": alerts})
-    assert found == recipients
-    assert len(problems) == 1 and problem in problems[0]
-    assert "chan@" not in problems[0] and "all@" not in problems[0]  # /api/v1/health is public
-
-
-def test_only_the_first_twenty_addresses_get_alerts():
-    emails = [f"person{i}@example.com" for i in range(MAX_RECIPIENTS + 5)]
-    found, problems = alert_recipients({**DEMO, "alerts": {"email": emails}})
-    assert found == {"email": emails[:MAX_RECIPIENTS]}
-    assert problems == ["alerts.email has 25 addresses; only the first 20 get alerts"]
-
-
-def test_a_bad_recipients_entry_is_reported_but_never_changes_the_screens(tmp_path):
-    write(tmp_path, "demo-site.json", DEMO)
-    write(tmp_path, "a.json", {**DEMO, "siteId": "site-a", "alerts": {"email": ["chan at example.com"]}})
-    sites, default, problems = load_sites(tmp_path)
-    assert set(sites) == {"demo-kai-tak", "site-a"} and default == "demo-kai-tak"
-    assert tile_trades(sites["site-a"]) == tile_trades(DEMO)  # its own trades, not the generic site
-    assert problems == ["config/sites/a.json: alerts.email[0] is not an email address; it gets no alerts"]

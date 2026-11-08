@@ -17,7 +17,7 @@ ACTIONS_PATH = ROOT / "config" / "display_actions.json"
 SCHEDULE_PATH = ROOT / "config" / "rest_schedule.json"
 # Every section that holds wording shown on screen. scripts/check_official_sources.py checks the same sections.
 # `rest` holds the English rest wording, filled in from config/rest_schedule.json; the others hold one entry per key.
-ENTRY_SECTIONS = ("weather", "supervisor", "notes", "extreme")
+ENTRY_SECTIONS = ("weather", "supervisor", "notes")
 SECTIONS = (*ENTRY_SECTIONS, "rest")
 LANGS = ("zh", "en")
 ZH_JOIN = "："
@@ -163,9 +163,6 @@ def fragment_errors(actions, schedule=None):
                 errors.append(f"{section}.{key}: no main instruction")
             check(f"{section}.{key}", displayed(spec), spec.get("quotes"), "zh")
             check_en(f"{section}.{key}", spec)
-    extreme = actions.get("extreme")
-    if extreme is not None and not ((extreme.get("display") or {}).get("main") and "supervisor" in extreme):
-        errors.append("extreme: needs display.main and supervisor")
 
     rest = actions.get("rest")
     if rest is not None:
@@ -203,19 +200,3 @@ def note_text(actions, key):
 def note_text_en(actions, key):
     return english_text(actions["notes"][key])
 
-
-def extreme_wording(actions):
-    """The 「極端情況」 lines: the instruction and its sub lines, and the supervisor line."""
-    spec = actions["extreme"]
-    return {
-        "main": spec["display"]["main"],
-        "sub": list(spec["display"].get("sub") or []),
-        "supervisor": ZH_JOIN.join(spec["supervisor"]["fragments"]),
-    }
-
-
-def extreme_english(actions):
-    """The official English of the 「極端情況」 lines: `lines` under the instruction ([] when there is none) and the
-    supervisor line (None when there is none)."""
-    spec = actions["extreme"]
-    return {"lines": english_lines(spec["display"]), "supervisor": english_text(spec["supervisor"])}

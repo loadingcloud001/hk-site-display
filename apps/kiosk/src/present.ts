@@ -50,18 +50,8 @@ export type Wind = {
   updatedAt: string;
 };
 
-// 「極端情況」 in force: the Government's announcement, switched on by the operator. It has no official icon, so the
-// screen shows its name and the announced period instead. startZh / endZh are HH:MM, dated when not today.
-export type Extreme = {
-  nameZh: string;
-  startsAt: string;
-  endsAt: string;
-  startZh: string;
-  endZh: string;
-};
-
 export type Display = {
-  mode: "normal" | "heat" | "weather" | "extreme";
+  mode: "normal" | "heat" | "weather";
   main: string | null;
   sub: string[];
   meta: string | null;
@@ -81,7 +71,6 @@ export type Snapshot = {
   tone?: string;
   signals?: Signal[];
   display: Display;
-  extreme?: Extreme | null;
   restTiles?: RestTile[];
   notes?: string[];
   notesEn?: (string | null)[];
@@ -105,16 +94,6 @@ export function isStale(s: Snapshot, ageMs?: number, now = Date.now()): boolean 
   const t = Date.parse(s.generatedAt);
   if (Number.isNaN(t)) return true;
   return now - t > limit;
-}
-
-// A live snapshot showing 「極端情況」 is out of date once the announced end has passed by a minute: a connected
-// screen has a new snapshot within 30 s of the end. `now` must be the server's time (the kiosk's corrected clock).
-const EXTREME_GRACE_MS = 60_000;
-
-export function extremeOverdue(s: Snapshot, now: number): boolean {
-  if (!s.extreme) return false;
-  const end = Date.parse(s.extreme.endsAt);
-  return Number.isFinite(end) && now > end + EXTREME_GRACE_MS;
 }
 
 const COMPASS = new Set(["北", "東北", "東", "東南", "南", "西南", "西", "西北"]);
