@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.sim_cases import CASE_IDS, build_case, list_cases, list_official_icons
+from app.sim_cases import CASE_IDS, SITE, build_case, list_cases, list_official_icons
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "apps" / "kiosk" / "public"
@@ -266,6 +266,51 @@ def test_pre8_shows_the_signal_in_force():
     assert build_case("pre8-amber")["display"]["heroRel"] == "official/warning/tc3.png"
 
 
+EN_KEYS = ("en", "metaEn", "notesEn", "textEn", "fromEn")
+
+
+def without_english(value):
+    if isinstance(value, dict):
+        return {k: without_english(v) for k, v in value.items() if k not in EN_KEYS}
+    if isinstance(value, list):
+        return [without_english(v) for v in value]
+    return value
+
+
+def test_english_never_changes_the_chinese_in_any_case():
+    chinese_only = {k: v for k, v in SITE.items() if k != "languages"}
+    for case_id in CASE_IDS:
+        english = without_english(build_case(case_id))
+        chinese = build_case(case_id, chinese_only)
+        assert english["site"].pop("languages") == ["zh", "en"], case_id
+        assert chinese["site"].pop("languages") == ["zh"], case_id
+        assert english == chinese, case_id
+
+
+def test_every_case_has_english_names_and_lines_where_official_ones_exist():
+    for case_id in CASE_IDS:
+        snap = build_case(case_id)
+        display = snap["display"]
+        if display["mode"] == "weather":
+            assert display["en"] and display["metaEn"], case_id
+        elif display["mode"] == "heat":
+            assert display["metaEn"] and snap["notesEn"], case_id
+            assert all(tile["en"]["lines"] for tile in snap["restTiles"]), case_id
+        else:
+            assert display["en"] and display["metaEn"] is None, case_id
+        for line in snap["supervisor"]:
+            # 「極端情況」's line hides its trigger, which would repeat the name on the plate: no English name.
+            assert line["textEn"] and (line["fromEn"] or display["mode"] == "extreme"), case_id
+
+
+def test_preview_english_names_follow_the_live_feed_shape():
+    assert build_case("rain-black")["display"]["metaEn"] == "Black Rainstorm Warning Signal"
+    assert build_case("tc9")["display"]["metaEn"] == "Increasing Gale or Storm Signal No. 9"
+    lines = build_case("rain-amber-tc3")["supervisor"]
+    assert [line["fromEn"] for line in lines] == ["Strong Wind Signal No. 3", "Amber Rainstorm Warning Signal"]
+    assert build_case("trades-indoor")["restTiles"][0]["en"]["trades"] == "Bar-fixing worker"
+
+
 def test_extreme_conditions_cases():
     alone = build_case("extreme")
     assert alone["display"]["mode"] == "extreme" and alone["tone"] == "extreme"
@@ -293,3 +338,21 @@ def test_extreme_conditions_apply_to_a_sites_preview_too():
     site = {"siteId": "s7k2", "environment": "outdoor", "primaryTrades": [{"labelZh": "外牆", "workload": "heavy"}]}
     snap = build_case("extreme", site)
     assert snap["display"]["mode"] == "extreme" and snap["site"]["id"] == "s7k2"
+
+
+def test_extreme_conditions_english():
+    snap = build_case("extreme-tc3")
+    assert snap["display"]["en"] == [
+        "To stay where they are or in a safe place",
+        "instead of heading for work at workplaces immediately",
+    ]
+    assert snap["display"]["metaEn"] is None
+    assert snap["supervisor"] == [
+        {
+            "text": "立即暫停僱員在戶外及空曠地方的工作，並安排僱員到安全地方暫避",
+            "fromZh": "「極端情況」",
+            "textEn": "immediately suspend the work of employees working outdoors and in exposed areas and arrange "
+            "temporary shelter in a safe place for them",
+            "fromEn": None,
+        }
+    ]

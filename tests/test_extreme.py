@@ -18,6 +18,10 @@ SCHEDULE = json.loads((ROOT / "config/rest_schedule.json").read_text(encoding="u
 ICONS = json.loads((ROOT / "config/official_icons.json").read_text(encoding="utf-8"))
 MAIN = "留在原來的地點或安全的地點"
 SUPERVISOR = "立即暫停僱員在戶外及空曠地方的工作，並安排僱員到安全地方暫避"
+SUPERVISOR_EN = (  # the demo site shows English: the official English Code of Practice, same bullet
+    "immediately suspend the work of employees working outdoors and in exposed areas and arrange temporary shelter "
+    "in a safe place for them"
+)
 
 
 def load(name):
@@ -278,7 +282,7 @@ def test_in_force_it_takes_the_centre_with_the_official_wording():
         "startZh": "17:00",
         "endZh": "19:00",
     }
-    assert s["supervisor"] == [{"text": SUPERVISOR, "fromZh": "「極端情況」"}]
+    assert s["supervisor"] == [{"text": SUPERVISOR, "fromZh": "「極端情況」", "textEn": SUPERVISOR_EN, "fromEn": None}]
     assert s["priority"] == {"band": "P0", "headlineZh": "「極端情況」"}
     assert (s["display"]["action"], s["display"]["actionSub"]) == (MAIN, "而非立即啟程往工作地點上班")
     assert s["display"]["meta"] == "「極端情況」 · 17:00 生效 · 19:00 結束"

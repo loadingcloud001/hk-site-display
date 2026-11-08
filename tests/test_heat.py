@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from app.actions import load_actions
 from app.heat import build_rest_tiles, normal_rest_lines, trades_label
 from app.site import configured_trades, tile_trades
 
@@ -82,3 +83,37 @@ def test_normal_day_lines():
         "重至極重勞動：每 2 小時休息 15 分鐘",
         "輕至中等勞動：每 2 小時休息 10 分鐘",
     ]
+
+
+REST_EN = load_actions()["rest"]
+
+
+def english(tiles):
+    return [(t["en"]["trades"], t["en"]["lines"]) for t in tiles]
+
+
+def test_tiles_carry_their_official_english_on_sites_that_show_it():
+    assert all("en" not in t for t in build_rest_tiles(SCHEDULE, configured_trades(DEMO), "amber"))
+    tiles = build_rest_tiles(SCHEDULE, configured_trades(DEMO), "amber", REST_EN)
+    assert english(tiles) == [
+        ("Bar-fixing worker · Scaffolder", ["45 mins rest", "15 mins work"]),
+        ("Carpenter · Concrete worker", ["30 mins rest", "30 mins work"]),
+        ("Plumber · Welder", ["15 mins rest", "45 mins work"]),
+        ("Security guard · Inspector of works", ["at least 10 minutes of rest for every 2 hours of work"]),
+    ]
+    black = build_rest_tiles(SCHEDULE, configured_trades(DEMO), "black", REST_EN)
+    assert english(black)[0] == ("Bar-fixing worker · Scaffolder · Carpenter +1", ["Suspension of work"])
+
+
+def test_generic_tiles_use_the_official_english_workload_levels():
+    tiles = build_rest_tiles(SCHEDULE, tile_trades({"environment": "outdoor"}), "red", REST_EN)
+    assert [t["en"]["trades"] for t in tiles] == ["Very Heavy", "Heavy", "Moderate", "Light"]
+
+
+def test_a_tile_shows_english_names_only_when_every_trade_has_one():
+    trades = [
+        {"labelZh": "紮鐵", "labelEn": "Bar-fixing worker", "workload": "very_heavy", "environment": "outdoor", "adjustMinutes": 0},
+        {"labelZh": "外牆", "workload": "very_heavy", "environment": "outdoor", "adjustMinutes": 0},
+    ]
+    (tile,) = build_rest_tiles(SCHEDULE, trades, "amber", REST_EN)
+    assert tile["tradesZh"] == "紮鐵 · 外牆" and tile["en"] == {"trades": None, "lines": ["45 mins rest", "15 mins work"]}

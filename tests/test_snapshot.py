@@ -95,7 +95,7 @@ def test_normal_state_lines_and_t3_supervisor_line():
     snap = build(warnsum=T3)
     assert snap["display"]["mode"] == "normal"
     assert snap["display"]["sub"] == ["重至極重勞動：每 2 小時休息 15 分鐘", "輕至中等勞動：每 2 小時休息 10 分鐘"]
-    assert snap["supervisor"] == [{"text": "停止操作起重機、吊船", "fromZh": "三號強風信號"}]
+    assert [(s["text"], s["fromZh"]) for s in snap["supervisor"]] == [("停止操作起重機、吊船", "三號強風信號")]
     assert snap["tone"] == "idle"
 
 
@@ -148,4 +148,77 @@ def test_rainstorm_meta_and_supervisor_source_name_the_whole_warning():
     assert black["display"]["meta"] == "黑色暴雨警告信號 · 00:05 發出"
     assert black["hko"]["headlineZh"] == "黑色暴雨警告信號"
     amber = build(warnsum={"WRAIN": {"name": "暴雨警告信號", "code": "WRAINA", "type": "黃色", "actionCode": "ISSUE"}})
-    assert amber["supervisor"] == [{"text": "停止操作吊船、進行斜坡工程", "fromZh": "黃色暴雨警告信號"}]
+    assert [(s["text"], s["fromZh"]) for s in amber["supervisor"]] == [("停止操作吊船、進行斜坡工程", "黃色暴雨警告信號")]
+
+
+# English: only for a site whose file asks for it, and never instead of the Chinese.
+ZH_SITE = {k: v for k, v in SITE.items() if k != "languages"}
+T8_NE_EN = {"WTCSGNL": {"name": "Tropical Cyclone Warning Signal", "code": "TC8NE",
+                        "type": "No. 8 Northeast Gale or Storm Signal", "actionCode": "ISSUE"}}
+EN_KEYS = ("en", "metaEn", "notesEn", "textEn", "fromEn")
+
+
+def has_english(value):
+    if isinstance(value, dict):
+        return any(k in EN_KEYS for k in value) or any(has_english(v) for v in value.values())
+    if isinstance(value, list):
+        return any(has_english(v) for v in value)
+    return False
+
+
+def test_a_chinese_only_site_gets_no_english_fields():
+    for overrides in ({"warnsum": T8_NE}, {"hsww_raw": load("hsww_amber_inforce.json")}, {"warnsum": T3}):
+        snap = build(site=ZH_SITE, warnsum_en=T8_NE_EN, **overrides)
+        assert snap["site"]["languages"] == ["zh"] and not has_english(snap), overrides
+
+
+def test_weather_state_english_lines_and_hko_english_name():
+    snap = build(warnsum=T8_NE, warnsum_en=T8_NE_EN)
+    d = snap["display"]
+    assert snap["site"]["languages"] == ["zh", "en"]
+    assert d["en"] == [
+        "employees should be released from workplaces or from work by batches",
+        "Return home as soon as possible if conditions so permit",
+    ]
+    assert d["metaEn"] == "No. 8 Northeast Gale or Storm Signal"
+    assert (d["main"], d["meta"]) == ("分批離開工作地點", "八號東北烈風或暴風信號 · 15:30 發出")
+
+
+def test_no_english_name_rather_than_a_guess():
+    # The English feed has not caught up (or failed): the screen shows no English name, never a translation.
+    snap = build(warnsum=T8_NE, warnsum_en={})
+    assert snap["display"]["metaEn"] is None and snap["display"]["en"]
+    other = build(warnsum=T8_NE, warnsum_en={"WTCSGNL": {**T8_NE_EN["WTCSGNL"], "code": "TC3", "type": "Strong Wind Signal No. 3"}})
+    assert other["display"]["metaEn"] is None
+
+
+def test_pre8_english_name_is_hkos_official_one():
+    snap = build(warnsum=load("warnsum_tc1.json"), warning_info=load("warningInfo_pre8.json"))
+    assert snap["display"]["metaEn"] == "Pre-no.8 Special Announcement"
+    assert snap["display"]["en"] == ["employees should be released from workplaces or from work by batches"]
+
+
+def test_heat_state_english_tiles_title_and_note():
+    snap = build(hsww_raw=load("hsww_amber_inforce.json"))
+    assert snap["display"]["en"] == [] and snap["display"]["metaEn"] == "Amber Heat Stress at Work Warning"
+    assert snap["restTiles"][0]["en"] == {"trades": "Bar-fixing worker · Scaffolder", "lines": ["45 mins rest", "15 mins work"]}
+    assert snap["notesEn"] == [
+        "employees are unacclimatised or need to re-acclimate to hot work environment: "
+        "increase the hourly rest time for such employees by 15 minutes"
+    ]
+
+
+def test_normal_state_english_has_the_rest_lines_but_no_made_up_heading():
+    snap = build(warnsum=T3, warnsum_en={"WTCSGNL": {"name": "Tropical Cyclone Warning Signal", "code": "TC3",
+                                                    "type": "Strong Wind Signal No. 3", "actionCode": "ISSUE"}})
+    d = snap["display"]
+    assert d["main"] == "正常工作" and d["metaEn"] is None  # 正常工作 has no official English
+    assert d["en"] == [
+        "heavy to very heavy levels of physical work: at least a 15-minute rest break after every 2 hours of work",
+        "light to moderate levels of physical work: a minimum of a 10-minute rest break after every 2 hours of work",
+    ]
+    assert snap["supervisor"] == [{
+        "text": "停止操作起重機、吊船", "fromZh": "三號強風信號",
+        "textEn": "Stop the operation of cranes, suspended working platforms, etc.", "fromEn": "Strong Wind Signal No. 3",
+    }]
+    assert "notesEn" not in snap or snap["notesEn"] == []

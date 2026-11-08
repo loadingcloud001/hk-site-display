@@ -24,6 +24,7 @@ RAIN_AMBER = "在黃色或紅色暴雨警告期間︰停止操作吊船、進行
 PDF_BYTES = b"%PDF-1.6 fake Labour Department PDF"
 PDF_URL = "https://example.test/guidance.pdf"
 PAGE_URL = "https://example.test/advice.htm"
+PAGE_EN_URL = "https://example.test/en/advice.htm"
 
 
 def test_whitespace_is_ignored():
@@ -126,8 +127,19 @@ def test_every_quote_cites_a_source_the_check_can_fetch():
     assert cited and set(cited) <= set(ACTIONS["sources"])
     for key, source in ACTIONS["sources"].items():
         assert cos.kind_of(source["url"]) in ("pdf", "html"), key
-    entries = [q for section in cos.SECTIONS for spec in ACTIONS[section].values() for q in spec["quotes"]]
+    entries = cos.cited_quotes(ACTIONS)
     assert sum(len(where) for quotes in cited.values() for _, where in quotes) == len(entries)
+
+
+def test_the_check_reads_the_english_quotes_too():
+    entries = cos.cited_quotes(ACTIONS)
+    english = [where for where, quote in entries if ACTIONS["sources"][quote["source"]]["lang"] == "en"]
+    assert "weather.tc8.en" in english and "supervisor.thunderstorm.en" in english
+    assert "notes.heatUnacclimatised.en" in english and "rest.tile.en" in english
+    # Every English source is checked, and every quote of an English source is English.
+    assert {quote["source"] for _, quote in entries if _.endswith(".en")} == {
+        key for key, source in ACTIONS["sources"].items() if source["lang"] == "en"
+    }
 
 
 def test_every_pdf_source_is_in_the_lock():
@@ -147,16 +159,25 @@ def _actions(page_quote="切勿外出。"):
         "sources": {
             "page": {"titleZh": "網頁", "url": PAGE_URL},
             "guide": {"titleZh": "指引", "url": PDF_URL},
+            "page-en": {"titleEn": "Page", "url": PAGE_EN_URL},
         },
-        "weather": {"x": {"codes": ["X"], "main": "切勿外出", "quotes": [{"source": "page", "text": page_quote}]}},
+        "weather": {
+            "x": {
+                "codes": ["X"],
+                "main": "切勿外出",
+                "quotes": [{"source": "page", "text": page_quote}],
+                "en": {"lines": ["Stay indoors"], "quotes": [{"source": "page-en", "text": "Stay indoors."}]},
+            }
+        },
         "supervisor": {"y": {"rank": 1, "codes": ["Y"], "fragments": [], "quotes": [{"source": "guide", "text": RAIN_AMBER}]}},
         "notes": {},
     }
 
 
-def _site(page="<p>切勿外出。</p>", pdf=PDF_BYTES):
+def _site(page="<p>切勿外出。</p>", pdf=PDF_BYTES, page_en="<p>Stay indoors.</p>"):
     docs = {
         PAGE_URL: cos.Doc(page.encode("utf-8"), None, "utf-8"),
+        PAGE_EN_URL: cos.Doc(page_en.encode("utf-8"), None, "utf-8"),
         PDF_URL: cos.Doc(pdf, "Thu, 27 Aug 2026 05:55:00 GMT", None),
     }
 
@@ -191,6 +212,11 @@ def test_a_changed_pdf_is_a_problem_even_when_its_quotes_match():
 def test_a_changed_page_is_a_problem():
     found = _check(get=_site(page="<p>切勿出外。</p>"))
     assert len(found) == 1 and "weather.x" in found[0]
+
+
+def test_a_changed_english_page_is_a_problem():
+    found = _check(get=_site(page_en="<p>Stay inside.</p>"))
+    assert len(found) == 1 and "weather.x.en" in found[0] and "page-en" in found[0]
 
 
 def test_a_failed_download_is_a_problem():

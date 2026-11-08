@@ -215,5 +215,5 @@ All additive. A kiosk deployed before this change shows the instruction, the sub
 
 - **After 「極端情況」, Signal 8 or above, or Black rain ends.** The Code (Chapter 3) requires cranes, scaffolding, gondolas, electrical installations and similar equipment to be examined by a competent examiner or person before they are used again. The screen goes straight back to 正常工作. A supervisor line for some hours after the end would close that gap. How long is a product decision, so it is not in this change.
 - **Two-line instruction in portrait** (§6.1), if portrait screens turn out to be read from further away.
-- **English line**, using the official English Code of Practice's wording for the same bullets, under the same verbatim test.
+- **English line**: done with the English line (its spec, §4). Sites that show English get the English Code of Practice's wording for the same two bullets, under the same verbatim test.
 - **An alert when the switch changes.** Supervisor alerts (`app/alerts.py`) send nothing when 「極端情況」 starts or ends. A message for it would use the banner's words, 「極端情況」 生效 and 「極端情況」 結束.

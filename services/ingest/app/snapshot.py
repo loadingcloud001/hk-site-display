@@ -1,17 +1,35 @@
 from datetime import datetime, timedelta, timezone
 
-from app.actions import extreme_wording, load_actions, note_text, validate_actions, weather_by_code
+from app.actions import (
+    english_lines,
+    extreme_english,
+    extreme_wording,
+    load_actions,
+    normal_lines_en,
+    note_text,
+    note_text_en,
+    validate_actions,
+    weather_by_code,
+)
 from app.banner import build_banner
 from app.extreme import CODE as EXTREME_CODE
 from app.extreme import NAME as EXTREME_NAME
 from app.extreme import active as extreme_active
 from app.extreme import when_zh
 from app.heat import build_rest_tiles, normal_rest_lines
-from app.hko import PRE8_NAME, active_codes, parse_warning_info, parse_warnsum, parse_warnsum_events, warning_name
+from app.hko import (
+    PRE8_NAME,
+    PRE8_NAME_EN,
+    active_codes,
+    parse_warning_info,
+    parse_warnsum,
+    parse_warnsum_events,
+    warning_name,
+)
 from app.hsww import parse_hkhi_icon
 from app.priority import classify
 from app.rest import compute_rest
-from app.site import WORKLOAD_ZH, normal_workloads, tile_trades, weather_station, wind_station
+from app.site import WORKLOAD_ZH, normal_workloads, site_languages, tile_trades, weather_station, wind_station
 from app.state import state_tone, supervisor_lines, tc_signal_code, winning_weather_code
 from app.weather import parse_current, parse_forecast, parse_time, wx_icon_rel
 from app.wind import current_wind
@@ -19,7 +37,9 @@ from app.wind import current_wind
 HKT = timezone(timedelta(hours=8))
 ACTIONS = validate_actions(load_actions())
 WEATHER = weather_by_code(ACTIONS)
+REST_EN = ACTIONS["rest"]
 EXTREME = extreme_wording(ACTIONS)
+EXTREME_EN = extreme_english(ACTIONS)
 
 P0 = {"TC8NE", "TC8SE", "TC8NW", "TC8SW", "TC8", "TC9", "TC10", "WRAINB", "WL"}
 P1 = {"TC3", "WRAINR", "WTS", "WTCPRE8"}
@@ -154,6 +174,37 @@ def _extreme_display(notice):
     return {"mode": "extreme", "main": EXTREME["main"], "sub": list(EXTREME["sub"]), "meta": meta, "heroRel": None}
 
 
+def _extreme_supervisor(english):
+    """The 「極端情況」 supervisor line. The screen hides its trigger, which would repeat the name on the plate."""
+    line = {"text": EXTREME["supervisor"], "fromZh": EXTREME_NAME}
+    if english:
+        line.update({"textEn": EXTREME_EN["supervisor"], "fromEn": None})
+    return line
+
+
+def english_names(warnsum_en):
+    """HKO's English name of every warning in force, by code, from the English warnsum (`lang=en`)."""
+    return {w["code"]: warning_name(w, "en") for w in parse_warnsum(warnsum_en or {}) if warning_name(w, "en")}
+
+
+def _english_display(display, weather_code, hsww, names_en, schedule, site):
+    """The official English shown under the Chinese (`en`) and the warning's English name (`metaEn`).
+
+    Only words with an official English version are given: 正常工作 has none, so a normal day shows only the
+    English of its rest lines. A warning whose English name HKO has not sent shows no English name, and
+    「極端情況」, which is not an HKO warning, shows none: the plate in place of its icon has its name.
+    """
+    mode = display["mode"]
+    if mode == "extreme":
+        return {"en": list(EXTREME_EN["lines"]), "metaEn": None}
+    if mode == "weather":
+        name = PRE8_NAME_EN if weather_code == "WTCPRE8" else names_en.get(weather_code)
+        return {"en": english_lines(WEATHER[weather_code]), "metaEn": name or None}
+    if mode == "heat":
+        return {"en": [], "metaEn": hsww.get("titleEn") or None}
+    return {"en": normal_lines_en(schedule, normal_workloads(site), REST_EN["normal"]["en"]), "metaEn": None}
+
+
 def _legacy_fields(display, rest, hsww):
     """`action` / `actionSub` for the kiosk deployed before this change."""
     mode = display["mode"]
@@ -190,10 +241,14 @@ def build_snapshot(
     stale=False,
     position=None,
     wind=None,
+    warnsum_en=None,
     extreme=None,
 ):
-    """`extreme` is the recorded 「極端情況」 announcement (app.extreme), in force or not; None when there is none."""
+    """`extreme` is the recorded 「極端情況」 announcement (app.extreme), in force or not; None when there is none.
+    `warnsum_en` is HKO's English warnsum (`lang=en`), read only for warning names on a site that shows English."""
     now = now or datetime.now(HKT)
+    languages = site_languages(site)
+    english = "en" in languages
     in_force = extreme_active(extreme, now)
     hsww = parse_hkhi_icon(hsww_raw or {})
     warnings = parse_warnsum(warnsum or {})
@@ -216,20 +271,21 @@ def build_snapshot(
     trade = trades[0] if trades else {}
     signals = build_signals(hsww, warnings, codes, icons_map)
     labels = {s["code"]: s["labelZh"] for s in signals}
+    names_en = english_names(warnsum_en) if english else None
 
     # 「極端情況」 first, then the weather order, then heat stress (state.py). Every warning in force stays in `signals`.
     weather_code = winning_weather_code(codes)
-    rest_tiles, notes, supervisor = [], [], []
+    rest_tiles, note_keys, supervisor = [], [], []
     notice = _extreme_notice(in_force, now) if in_force else None
     if notice:
         display = _extreme_display(notice)
-        supervisor = [{"text": EXTREME["supervisor"], "fromZh": EXTREME_NAME}]
+        supervisor = [_extreme_supervisor(english)]
     elif weather_code:
         display = _weather_display(weather_code, warnings, info, icons_map, codes)
     elif hsww.get("inForce"):
         display = _heat_display(hsww)
-        rest_tiles = build_rest_tiles(schedule, tile_trades(site), hsww["level"])
-        notes = [note_text(ACTIONS, "heatUnacclimatised")]
+        rest_tiles = build_rest_tiles(schedule, tile_trades(site), hsww["level"], REST_EN if english else None)
+        note_keys = ["heatUnacclimatised"]
     else:
         display = {
             "mode": "normal",
@@ -239,8 +295,15 @@ def build_snapshot(
             "heroRel": IDLE_HERO,
         }
     if display["mode"] in ("normal", "heat"):
-        supervisor = supervisor_lines(ACTIONS, codes, labels)
+        supervisor = supervisor_lines(ACTIONS, codes, labels, names_en)
     display.update(_legacy_fields(display, rest, hsww))
+    notes = [note_text(ACTIONS, key) for key in note_keys]
+    extra = {}
+    if english:
+        # English fields exist only for a site that shows English; a Chinese-only snapshot is unchanged.
+        display.update(_english_display(display, weather_code, hsww, names_en, schedule, site))
+        # One per Chinese note, in the same order; None where no official English sentence exists.
+        extra["notesEn"] = [note_text_en(ACTIONS, key) for key in note_keys]
 
     return {
         "generatedAt": generated,
@@ -255,6 +318,7 @@ def build_snapshot(
             "nameZh": site.get("nameZh"),
             "tradeZh": trade.get("labelZh") or "",
             "workloadZh": WORKLOAD_ZH.get(workload, workload),
+            "languages": languages,
         },
         "hsww": hsww,
         "hko": {
@@ -271,6 +335,7 @@ def build_snapshot(
         "rest": _legacy_rest(rest),
         "restTiles": rest_tiles,
         "notes": notes,
+        **extra,
         "supervisor": supervisor,
         "banner": build_banner(hsww, events, info, now, code_rank, stale, extreme),
         "weather": parse_current(rhrread, weather_station(site), now, position),

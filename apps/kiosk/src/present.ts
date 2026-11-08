@@ -6,6 +6,10 @@ export type Signal = {
   impact?: "high" | "low";
 };
 
+// The official English for a tile, on sites that show English: the trades' English names (null unless every
+// trade on the tile has one) and its lines (guidance notes Appendix 4, or §5.5.4 for the 2-hour baseline).
+export type RestTileEn = { trades: string | null; lines: string[] };
+
 export type RestTile = {
   kind: "suspend" | "rest" | "baseline";
   rest: number;
@@ -13,11 +17,12 @@ export type RestTile = {
   perHours: number;
   trades: string[];
   tradesZh: string;
+  en?: RestTileEn | null;
 };
 
 export type Banner = { time: string; textZh: string; kind: "issue" | "cancel"; code: string };
 
-export type SupervisorLine = { text: string; fromZh: string };
+export type SupervisorLine = { text: string; fromZh: string; textEn?: string | null; fromEn?: string | null };
 
 export type WeatherNow = {
   iconRel: string | null;
@@ -63,6 +68,9 @@ export type Display = {
   heroRel: string | null;
   action: string;
   actionSub: string;
+  // Sites that show English: official English lines under the instruction, and HKO's English warning name.
+  en?: string[];
+  metaEn?: string | null;
 };
 
 export type Snapshot = {
@@ -76,12 +84,13 @@ export type Snapshot = {
   extreme?: Extreme | null;
   restTiles?: RestTile[];
   notes?: string[];
+  notesEn?: (string | null)[];
   supervisor?: SupervisorLine[];
   banner?: Banner | null;
   weather?: WeatherNow | null;
   wind?: Wind | null;
   forecast?: Forecast | null;
-  site?: { id: string | null; known?: boolean };
+  site?: { id: string | null; known?: boolean; languages?: string[] };
 };
 
 const HK = "Asia/Hong_Kong";
