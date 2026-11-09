@@ -78,6 +78,8 @@ That is the gap PR #5 closed with a person. A public service cannot close it wit
 2. After the deploy, remove the two unused volumes: `docker volume rm hk-site-display_extreme-state hk-site-display_alert-state`. Neither feature was ever used: the switch had no key, and the alerts ran in dry run with no site configured.
 3. No `.env` keys are needed. The Bitwarden secret `HK_SITE_DISPLAY_ADMIN_KEY`, if one was made, can be deleted. The `HK_SITE_DISPLAY_SMTP_*` secrets were never created.
 
-## 7. Follow-up (not done)
+## 7. Follow-up
 
 After Signal 8 or above, or Black rain, is cancelled or lowered, the Code (Chapter 3, 復工安排的安全要點 (c)) asks employers to 「留意天氣信息，保持高度警覺」, because effects may continue. The screen could show that line automatically for a while after such a cancellation, from HKO's data alone. How long it should show is a product decision.
+
+Done: a 主管注意 line for 24 hours after such an end, from HKO's warnsum alone (`2026-11-08-after-signal-reminder-design.md`).

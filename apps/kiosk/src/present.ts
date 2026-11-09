@@ -22,7 +22,15 @@ export type RestTile = {
 
 export type Banner = { time: string; textZh: string; kind: "issue" | "cancel"; code: string };
 
-export type SupervisorLine = { text: string; fromZh: string; textEn?: string | null; fromEn?: string | null };
+// `whenZh` only on the line shown after a signal ended: when and how HKO ended it ("14:00 改發較低警告信號"),
+// after the signal's name in `fromZh`.
+export type SupervisorLine = {
+  text: string;
+  fromZh: string;
+  whenZh?: string | null;
+  textEn?: string | null;
+  fromEn?: string | null;
+};
 
 export type WeatherNow = {
   iconRel: string | null;

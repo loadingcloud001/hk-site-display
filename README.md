@@ -30,7 +30,7 @@ A site without `languages` shows Chinese only, exactly as before:
 
 ![Amber heat stress, Chinese only](docs/demo/amber-zh.png)
 
-Design and decisions: `docs/superpowers/specs/` ([gate screen](docs/superpowers/specs/2026-10-06-gate-screen-upgrade-design.md), [weather station by location](docs/superpowers/specs/2026-10-06-weather-station-by-location-design.md), [site-ready upgrade](docs/superpowers/specs/2026-11-07-site-ready-upgrade-design.md), [official English line](docs/superpowers/specs/2026-11-07-english-line-design.md), [no operator switch](docs/superpowers/specs/2026-11-08-no-operator-switch-design.md)). Installing a screen: [docs/site-setup.md](docs/site-setup.md).
+Design and decisions: `docs/superpowers/specs/` ([gate screen](docs/superpowers/specs/2026-10-06-gate-screen-upgrade-design.md), [weather station by location](docs/superpowers/specs/2026-10-06-weather-station-by-location-design.md), [site-ready upgrade](docs/superpowers/specs/2026-11-07-site-ready-upgrade-design.md), [official English line](docs/superpowers/specs/2026-11-07-english-line-design.md), [no operator switch](docs/superpowers/specs/2026-11-08-no-operator-switch-design.md), [reminder after Signal 8 or Black rain](docs/superpowers/specs/2026-11-08-after-signal-reminder-design.md)). Installing a screen: [docs/site-setup.md](docs/site-setup.md).
 
 ## Rules the notice will not break
 
@@ -119,6 +119,18 @@ Stations and coordinates are HKO's own (https://www.hko.gov.hk/en/cis/stn.htm). 
 - Without `?site=`, a screen shows `DEFAULT_SITE` (set it in `.env`), else the demo site, else the only site file.
 - docker-compose mounts the folder, so after editing a file run `docker compose restart ingest`; no rebuild is needed.
 - A file with a mistake is left out, logged, and listed in `siteProblems` of `/api/v1/health`. Its screens, and any unknown `?site=`, show every workload level without trade names until it is fixed. A mistake in one site's file never stops the other sites' screens.
+
+## After Signal 8 or Black rain
+
+For 24 hours after HKO cancels Signal 8 or above, or the Black Rainstorm Warning Signal, or replaces it with a lower signal, the screen adds a 主管注意 line: 「留意天氣信息，保持高度警覺：可能仍持續影響工作安全」, with the signal's name and when HKO ended it (「14:00 改發較低警告信號」 or 「14:00 取消」).
+
+- The wording is a verbatim part of the Labour Department Code's Chapter 3, 復工安排的安全要點 (c) 保持警覺, and of its English version.
+- It is ranked after the lines for warnings in force (at most two), and it never replaces an instruction.
+- HKO's warnsum shows a lowered signal only as a new issue of the lower one: Signal 3 after Signal 8 reads like any Signal 3. So the service remembers the last of these signals it saw in force, in memory only.
+- A restart or deploy within the 24 hours forgets it. The screen then shows what HKO's warnings alone give.
+- How long, and why: [the spec](docs/superpowers/specs/2026-11-08-after-signal-reminder-design.md).
+
+![After Signal 8 was lowered to Signal 3](docs/demo/after-tc8.png)
 
 ## What the screen does not show
 

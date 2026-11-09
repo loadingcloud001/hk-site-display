@@ -51,11 +51,12 @@ LOCK_NOTE = (
 REVERIFY = {
     "ld-gn-heat": "its edition, App. 1, App. 4, App. 4(a), §4.7.1, §5.4.4, §5.5.4 and App. 6 against "
     "config/rest_schedule.json and config/display_actions.json",
-    "ld-cop-weather": "its edition and App. 2 (what to do under each warning) against config/display_actions.json",
+    "ld-cop-weather": "its edition, App. 2 (what to do under each warning) and Ch. 3 復工安排的安全要點 (c) 保持警覺 "
+    "against config/display_actions.json",
     "ld-gn-heat-en": "its edition, App. 1, App. 4, App. 4(a), §4.7.1, §5.4.4 and §5.5.4 against "
     "config/rest_schedule.json and the English in config/display_actions.json",
-    "ld-cop-weather-en": "its edition and App. 2 (what to do under each warning) against the English in "
-    "config/display_actions.json",
+    "ld-cop-weather-en": "its edition, App. 2 (what to do under each warning) and Ch. 3 (c) Remain vigilant against "
+    "the English in config/display_actions.json",
 }
 REVERIFY_OTHER = "the whole document against config/display_actions.json and config/rest_schedule.json"
 

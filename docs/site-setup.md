@@ -116,6 +116,7 @@ Chrome is not available for Android TV, so use a kiosk browser app, for example 
 | 資料過期 — 請以我的天文台為準 | No fresh warning data for over 10 minutes. The screen still shows the last data | As above. It clears by itself |
 | 畫面出錯 — 請以我的天文台為準 | The page hit an error. It redraws itself with the next data | If it stays for more than a minute, restart the player and report it |
 | Tiles show 輕勞動 / 中等勞動 / 重勞動 / 極重勞動 instead of trade names | The address's `?site=` does not match a site file that works | Check the address, and `siteProblems` in `/api/v1/health` |
+| 主管注意 留意天氣信息，保持高度警覺：可能仍持續影響工作安全, followed by a signal's name and 「14:00 改發較低警告信號」 or 「14:00 取消」 | In the last 24 hours HKO cancelled Signal 8 or above, or Black rain, or replaced it with a lower signal. The Labour Department's Code of Practice asks for alertness, because the weather may still affect work safety | Resume work as the Code's Chapter 3 (復工安排的安全要點) says. The line goes by itself after 24 hours, or earlier if the server restarts. To see it in advance: `?preview=1&fixture=tc8-lowered` |
 
 The screen shows only what the Hong Kong Observatory's and the Labour Department's feeds say. No feed carries 「極端情況」 (extreme conditions), so the screen never shows it. When the Government announces 「極端情況」, follow the announcement, whatever the screen shows.
 

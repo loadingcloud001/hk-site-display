@@ -295,3 +295,43 @@ def test_the_service_polls_hkos_english_warning_summary():
 
     assert feed.refresh(Client(), datetime.now(HKT)) is False
     assert calls == [(main.WARN_URL, {"dataType": "warnsum", "lang": "en"})]
+
+
+def tc_signal(code, type_zh, issued):
+    at = issued.isoformat(timespec="seconds")
+    return {"WTCSGNL": {"name": "熱帶氣旋警告信號", "code": code, "type": type_zh, "actionCode": "ISSUE",
+                        "issueTime": at, "updateTime": at}}
+
+
+def test_live_screens_remind_supervisors_after_signal_8_is_lowered(monkeypatch, caplog):
+    monkeypatch.setattr(main, "ENDED", {"memory": {}})
+    now = datetime.now(HKT)
+    feeds = fake_feeds(warnsum=tc_signal("TC8NE", "八號東北烈風或暴風信號", now - timedelta(hours=5)))
+    client = client_with(feeds)
+    assert client.get("/api/v1/snapshot").json()["display"]["mode"] == "weather"
+    # HKO lowers the signal by issuing Signal 3; the poller's next reading has it.
+    warnsum = feeds.feeds["warnsum"]
+    warnsum.value, warnsum.fetched_at = tc_signal("TC3", "三號強風信號", now - timedelta(minutes=2)), now
+    with caplog.at_level(logging.INFO, logger="hk_site_display"):
+        body = client.get("/api/v1/snapshot").json()
+    assert body["display"]["main"] == "正常工作"
+    remind = body["supervisor"][-1]
+    assert remind["text"] == "留意天氣信息，保持高度警覺：可能仍持續影響工作安全"
+    assert remind["fromZh"] == "八號東北烈風或暴風信號"
+    assert remind["whenZh"] == (now - timedelta(minutes=2)).strftime("%H:%M") + " 改發較低警告信號"
+    assert any("TC8NE lowered at" in record.getMessage() for record in caplog.records)
+    # A restart forgets it: Signal 3 alone says nothing about Signal 8.
+    monkeypatch.setattr(main, "ENDED", {"memory": {}})
+    body = client.get("/api/v1/snapshot").json()
+    assert [line["text"] for line in body["supervisor"]] == ["停止操作起重機、吊船"]
+
+
+def test_a_fault_in_the_reminder_never_stops_the_screens(monkeypatch):
+    def broken(*_args):
+        raise RuntimeError("bug")
+
+    monkeypatch.setattr(main, "remember", broken)
+    monkeypatch.setattr(main, "ENDED", {"memory": {}})
+    response = client_with(fake_feeds()).get("/api/v1/snapshot")
+    assert response.status_code == 200
+    assert response.json()["display"]["mode"] == "normal"

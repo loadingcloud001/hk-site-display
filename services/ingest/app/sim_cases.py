@@ -3,8 +3,9 @@ import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from app.after import remember
 from app.site import validate_site
-from app.snapshot import build_snapshot
+from app.snapshot import AFTER_CODES, build_snapshot
 from app.wind import parse_wind_csv
 
 HKT = timezone(timedelta(hours=8))
@@ -142,6 +143,16 @@ def _english(warnsum: dict) -> dict:
             english["type"] = type_
         out[key] = english
     return out
+
+
+def _ended_memory(spec):
+    """What a live screen's service would remember of ended signals: the case's earlier warnsum readings
+    (`before`: (warnsum, fetched minutes ago), oldest first), then its own, fetched at the preview clock."""
+    memory = {}
+    for warnsum, minutes_ago in [*(spec.get("before") or []), (spec.get("warnsum") or {}, 0)]:
+        at = SIM_NOW - timedelta(minutes=minutes_ago)
+        memory = remember(memory, warnsum, _english(warnsum), at, AFTER_CODES)
+    return memory
 
 
 TC3_WARN = _warn("TC3", "熱帶氣旋警告信號", "三號強風信號")
@@ -413,6 +424,47 @@ SPECS = [
     {"id": "weather-old", "labelZh": "天氣資料過舊", "group": "other", "rhrreadAgo": 120},
     {"id": "forecast-old", "labelZh": "預報資料過舊", "group": "other", "fndAgo": 13 * 60},
     {"id": "wind-old", "labelZh": "風速資料過舊", "group": "other", "windAgo": 45},
+    # After Signal 8 or above, or Black rain, ends (app/after.py). `before` holds the earlier readings the service
+    # saw, as (warnsum, fetched minutes ago); HKO lowers a signal by issuing the lower one.
+    {
+        "id": "tc8-lowered",
+        "labelZh": "八號改發三號後",
+        "group": "tc",
+        "before": [(_warn("TC8NE", "熱帶氣旋警告信號", "八號東北烈風或暴風信號", minutes_ago=600), 46)],
+        "warnsum": _warn("TC3", "熱帶氣旋警告信號", "三號強風信號", minutes_ago=45),
+        "info": _info("WTCSGNL", "三號強風信號現正生效。", "TC3", minutes_ago=45),
+    },
+    {
+        "id": "tc8-all-cancelled",
+        "labelZh": "八號後信號全部取消",
+        "group": "tc",
+        "before": [
+            (_warn("TC8SE", "熱帶氣旋警告信號", "八號東南烈風或暴風信號", minutes_ago=900), 301),
+            (_warn("TC3", "熱帶氣旋警告信號", "三號強風信號", minutes_ago=300), 91),
+        ],
+        # Signal 3 was cancelled 90 minutes ago, and HKO no longer lists the cancellation.
+    },
+    {
+        "id": "rain-black-lowered",
+        "labelZh": "黑雨改發紅雨、黃雨後",
+        "group": "rain",
+        "before": [
+            (_warn("WRAINB", "暴雨警告信號", "黑色", minutes_ago=200), 91),
+            (_warn("WRAINR", "暴雨警告信號", "紅色", minutes_ago=90), 31),
+        ],
+        "warnsum": _warn("WRAINA", "暴雨警告信號", "黃色", minutes_ago=30),
+        "info": _info("WRAIN", "黃色暴雨警告信號現正生效。", "WRAINA", minutes_ago=30),
+    },
+    {
+        "id": "amber-after-tc8",
+        "labelZh": "黃暑熱＋昨日八號後",
+        "group": "combo",
+        "hsww": "hsww_amber_inforce.json",
+        "before": [
+            (_warn("TC8SW", "熱帶氣旋警告信號", "八號西南烈風或暴風信號", minutes_ago=1500), 1201),
+            (_warn("TC3", "熱帶氣旋警告信號", "三號強風信號", minutes_ago=1200), 600),
+        ],
+    },
 ]
 
 CASE_IDS = [s["id"] for s in SPECS]
@@ -478,6 +530,7 @@ def build_case(name: str, site: dict | None = None) -> dict:
         stale=bool(spec.get("stale")),
         wind=_wind(spec.get("windAgo", 6)),
         warnsum_en=_english(spec.get("warnsum")),
+        after=_ended_memory(spec),
     )
     if spec.get("stale"):
         snap["tone"] = "stale"

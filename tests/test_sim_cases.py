@@ -43,6 +43,10 @@ REQUIRED = [
     "trades-indoor",
     "weather-old",
     "forecast-old",
+    "tc8-lowered",
+    "tc8-all-cancelled",
+    "rain-black-lowered",
+    "amber-after-tc8",
 ]
 
 
@@ -295,3 +299,55 @@ def test_preview_english_names_follow_the_live_feed_shape():
     assert [line["fromEn"] for line in lines] == ["Strong Wind Signal No. 3", "Amber Rainstorm Warning Signal"]
     assert build_case("trades-indoor")["restTiles"][0]["en"]["trades"] == "Bar-fixing worker"
 
+
+
+REMAIN_VIGILANT = "留意天氣信息，保持高度警覺：可能仍持續影響工作安全"
+
+
+def after_line(case_id):
+    return next((line for line in build_case(case_id)["supervisor"] if line.get("whenZh")), None)
+
+
+def test_after_signal_8_or_black_rain_ends_supervisors_are_reminded():
+    tc3 = build_case("tc8-lowered")
+    assert tc3["display"]["main"] == "正常工作"
+    assert [line["text"] for line in tc3["supervisor"]] == ["停止操作起重機、吊船", REMAIN_VIGILANT]
+    assert after_line("tc8-lowered") == {
+        "text": REMAIN_VIGILANT,
+        "fromZh": "八號東北烈風或暴風信號",
+        "whenZh": "14:00 改發較低警告信號",
+        "textEn": tc3["supervisor"][1]["textEn"],
+        "fromEn": "No. 8 Northeast Gale or Storm Signal",
+    }
+    cancelled = build_case("tc8-all-cancelled")
+    assert cancelled["signals"] == []
+    assert [(line["fromZh"], line["whenZh"]) for line in cancelled["supervisor"]] == [
+        ("八號東南烈風或暴風信號", "09:45 改發較低警告信號")
+    ]
+    rain = build_case("rain-black-lowered")
+    assert [line["text"] for line in rain["supervisor"]] == ["停止操作吊船、進行斜坡工程", REMAIN_VIGILANT]
+    assert (after_line("rain-black-lowered")["fromZh"], after_line("rain-black-lowered")["whenZh"]) == (
+        "黑色暴雨警告信號",
+        "13:15 改發較低警告信號",
+    )
+
+
+def test_a_black_rain_cancellation_hko_still_lists_is_read_without_memory():
+    line = after_line("rain-black-cancel")
+    assert (line["fromZh"], line["whenZh"]) == ("黑色暴雨警告信號", "14:42 取消")
+
+
+def test_the_reminder_shows_with_the_heat_tiles_and_the_day_it_ended():
+    snap = build_case("amber-after-tc8")
+    assert snap["display"]["mode"] == "heat" and snap["restTiles"]
+    assert after_line("amber-after-tc8")["whenZh"] == "7月14日 18:45 改發較低警告信號"
+
+
+def test_the_reminder_never_replaces_an_instruction_in_force():
+    for case_id in ("rain-black", "rain-red", "tc8ne", "typhoon-stack", "landslip"):
+        assert build_case(case_id)["supervisor"] == [], case_id
+    for case_id in CASE_IDS:
+        snap = build_case(case_id)
+        if after_line(case_id):
+            assert snap["display"]["mode"] in ("normal", "heat"), case_id
+            assert snap["supervisor"][-1]["whenZh"], case_id

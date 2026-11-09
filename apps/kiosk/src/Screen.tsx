@@ -345,6 +345,7 @@ export function Screen({ snap, clock, date, layout, simbar, stale: staleProp }: 
               <span className="lab">主管注意</span>
               <span className="txt">{line.text}</span>
               <span className="src">{line.fromZh}</span>
+              {line.whenZh && <span className="src">{line.whenZh}</span>}
               {line.textEn && (
                 <div className="en sup-en" lang="en">
                   <span className="txt">

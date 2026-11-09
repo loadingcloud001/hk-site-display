@@ -14,10 +14,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.after import remember
 from app.feeds import Feed, FeedSet
 from app.sim_cases import ALIASES, CASE_IDS, build_case, list_cases, list_official_icons
 from app.site import GENERIC_SITE, load_sites
-from app.snapshot import build_snapshot
+from app.snapshot import AFTER, AFTER_CODES, build_snapshot
 from app.stations import parse_position
 from app.wind import parse_wind_csv
 
@@ -104,11 +105,48 @@ logging.getLogger("uvicorn.access").addFilter(HidePosition())
 
 POLLER = {"last": None}
 
+# Signal 8 or above, or Black rain, as last seen in force, and when HKO lowered or cancelled it (app/after.py).
+# In memory only: a restart forgets it, and the screens then show what HKO's warnings alone give.
+ENDED = {"memory": {}}
+_ENDED_LOCK = threading.Lock()
+
+
+def _remember_ended():
+    """Feed the latest warnsum reading to the memory of ended signals. Same reading, same memory."""
+    feed = FEEDS.feeds["warnsum"]
+    if feed.value is None or feed.fetched_at is None:
+        return
+    with _ENDED_LOCK:
+        before = ENDED["memory"]
+        try:
+            after = remember(before, feed.value, FEEDS.value("warnsumEn"), feed.fetched_at, AFTER_CODES)
+        except Exception:  # the reminder must never stop the screens' data
+            log.exception("could not read ended signals from warnsum")
+            return
+        ENDED["memory"] = after
+    for kind, last in after.items():
+        ended = last["ended"]
+        if ended and not (before.get(kind) or {}).get("ended"):
+            log.info(
+                "%s %s at %s: supervisor reminder for %s hours",
+                last["code"],
+                "cancelled" if ended["how"] == "cancel" else "lowered",
+                ended["at"].astimezone(HKT).strftime("%Y-%m-%d %H:%M"),
+                AFTER["hours"],
+            )
+    for kind in before.keys() - after.keys():
+        log.warning("lost track of %s, so no reminder after it", before[kind]["code"])
+
+
+def _refresh():
+    FEEDS.refresh_due()
+    _remember_ended()
+
 
 def _poll(stop):
     while not stop.is_set():
         try:
-            FEEDS.refresh_due()
+            _refresh()
         except Exception:  # one bad cycle must never stop the screens' data for good
             log.exception("feed refresh failed")
         POLLER["last"] = time.monotonic()
@@ -154,6 +192,7 @@ def _live_snapshot(site, now, position=None):
         position=position,
         wind=FEEDS.value("wind"),
         warnsum_en=FEEDS.value("warnsumEn"),
+        after=ENDED["memory"],
     )
 
 
@@ -217,7 +256,7 @@ def snapshot(
     # lat/lon/acc are the browser's position (rounded by the kiosk) and only choose the weather stations.
     # They are read as text so a bad value is ignored rather than failing a safety display with a 422.
     if not ENABLE_POLLER or FEEDS.never_fetched():
-        FEEDS.refresh_due()
+        _refresh()
     if FEEDS.value("hsww") is None and FEEDS.value("warnsum") is None:
         raise HTTPException(status_code=503, detail="no-data")
     snap = _live_snapshot(_site(site), datetime.now(HKT), parse_position(lat, lon, acc))

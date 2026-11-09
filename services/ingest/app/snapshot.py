@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 from app.actions import (
+    after_spec,
     english_lines,
     load_actions,
     normal_lines_en,
@@ -9,6 +10,7 @@ from app.actions import (
     validate_actions,
     weather_by_code,
 )
+from app.after import ended_signal, when_zh
 from app.banner import build_banner
 from app.heat import build_rest_tiles, normal_rest_lines
 from app.hko import (
@@ -32,6 +34,9 @@ HKT = timezone(timedelta(hours=8))
 ACTIONS = validate_actions(load_actions())
 WEATHER = weather_by_code(ACTIONS)
 REST_EN = ACTIONS["rest"]
+# The supervisor line shown for a while after Signal 8 or above, or Black rain, ends (app/after.py).
+AFTER = after_spec(ACTIONS)
+AFTER_CODES = frozenset(AFTER["after"]) if AFTER else frozenset()
 
 P0 = {"TC8NE", "TC8SE", "TC8NW", "TC8SW", "TC8", "TC9", "TC10", "WRAINB", "WL"}
 P1 = {"TC3", "WRAINR", "WTS", "WTCPRE8"}
@@ -165,6 +170,21 @@ def _english_display(display, weather_code, hsww, names_en, schedule, site):
     return {"en": normal_lines_en(schedule, normal_workloads(site), REST_EN["normal"]["en"]), "metaEn": None}
 
 
+def _after_line(memory, now, codes):
+    """What the supervisor line after a signal ended needs ({code, fromZh, whenZh, fromEn}), or None."""
+    if not AFTER:
+        return None
+    ended = ended_signal(memory, now, AFTER["hours"], codes)
+    if not ended:
+        return None
+    return {
+        "code": ended["code"],
+        "fromZh": ended["nameZh"],
+        "whenZh": when_zh(ended, now, AFTER["when"]),
+        "fromEn": ended["nameEn"],
+    }
+
+
 def _legacy_fields(display, rest, hsww):
     """`action` / `actionSub` for the kiosk deployed before this change."""
     mode = display["mode"]
@@ -202,8 +222,10 @@ def build_snapshot(
     position=None,
     wind=None,
     warnsum_en=None,
+    after=None,
 ):
-    """`warnsum_en` is HKO's English warnsum (`lang=en`), read only for warning names on a site that shows English."""
+    """`warnsum_en` is HKO's English warnsum (`lang=en`), read only for warning names on a site that shows English.
+    `after` is the memory of signals that ended (app.after.remember), for the supervisor line shown after them."""
     now = now or datetime.now(HKT)
     languages = site_languages(site)
     english = "en" in languages
@@ -247,7 +269,7 @@ def build_snapshot(
             "heroRel": IDLE_HERO,
         }
     if display["mode"] in ("normal", "heat"):
-        supervisor = supervisor_lines(ACTIONS, codes, labels, names_en)
+        supervisor = supervisor_lines(ACTIONS, codes, labels, names_en, _after_line(after, now, codes))
     display.update(_legacy_fields(display, rest, hsww))
     notes = [note_text(ACTIONS, key) for key in note_keys]
     extra = {}
